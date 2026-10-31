@@ -1301,50 +1301,96 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
                     UPDATE characters 
                     SET name = COALESCE(?, name),
                         level = COALESCE(?, level),
+                        exp = COALESCE(?, exp),
                         gold = COALESCE(?, gold),
                         diamonds = COALESCE(?, diamonds),
+                        stamina = COALESCE(?, stamina),
                         combat_power = COALESCE(?, combat_power),
-                        stage_id = COALESCE(?, stage_id)
+                        stage_id = COALESCE(?, stage_id),
+                        vip_level = COALESCE(?, vip_level)
                     WHERE username = ? AND server_id = ?
                 """, (
-                    p.get('name'), p.get('level'), p.get('gold'),
-                    p.get('diamonds'), p.get('combatPower'), p.get('stageId'),
-                    uname, server_id
+                    p.get('name'), p.get('level'), p.get('exp'), p.get('gold'),
+                    p.get('diamonds'), p.get('stamina'), p.get('combatPower'), p.get('stageId'),
+                    p.get('vipLevel'), uname, server_id
                 ))
 
             # Team Pets Sync
             team = body.get('team', [])
-            if team:
+            if isinstance(team, list) and team:
+                sconn.execute("DELETE FROM team_pets WHERE username = ? AND server_id = ?", (uname, server_id))
                 for idx, pet in enumerate(team):
                     puid = pet.get('uid') or f'{uname}_pet_{idx}'
                     sconn.execute("""
                         INSERT OR REPLACE INTO team_pets (
                             pet_uid, username, server_id, slot, pet_id, name, level, exp,
-                            cur_hp, max_hp, atk, def, spatk, spdef, speed, star, breakthrough_stage
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            cur_hp, max_hp, atk, def, spatk, spdef, speed, star, breakthrough_stage,
+                            iv_hp, iv_atk, iv_def, iv_spatk, iv_spdef, iv_speed,
+                            ev_hp, ev_atk, ev_def, ev_spatk, ev_spdef, ev_speed,
+                            nature, skill_lv_0, skill_lv_1, skill_lv_2, skill_lv_3,
+                            held_item_id, berry_item_id
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         puid, uname, server_id, idx, pet.get('id', 1), pet.get('name', 'Pet'),
                         pet.get('level', 1), pet.get('exp', 0), pet.get('currentHp', 100),
                         pet.get('maxHp', 100), pet.get('atk', 50), pet.get('def', 50),
                         pet.get('spatk', 50), pet.get('spdef', 50), pet.get('speed', 50),
-                        pet.get('star', 1), pet.get('breakthroughStage', 0)
+                        pet.get('star', 1), pet.get('breakthroughStage', 0),
+                        pet.get('ivHp', 15), pet.get('ivAtk', 15), pet.get('ivDef', 15),
+                        pet.get('ivSpAtk', 15), pet.get('ivSpDef', 15), pet.get('ivSpeed', 15),
+                        pet.get('evHp', 0), pet.get('evAtk', 0), pet.get('evDef', 0),
+                        pet.get('evSpAtk', 0), pet.get('evSpDef', 0), pet.get('evSpeed', 0),
+                        pet.get('nature', 'Hardy'),
+                        pet.get('skill_lv_0', 1), pet.get('skill_lv_1', 1), pet.get('skill_lv_2', 1), pet.get('skill_lv_3', 1),
+                        pet.get('heldItemId', 0), pet.get('berryItemId', 0)
+                    ))
+
+            # Box Pets Sync (PC Storage)
+            box = body.get('box', [])
+            if isinstance(box, list):
+                sconn.execute("DELETE FROM box_pets WHERE username = ? AND server_id = ?", (uname, server_id))
+                for idx, pet in enumerate(box):
+                    puid = pet.get('uid') or f'{uname}_box_{idx}'
+                    sconn.execute("""
+                        INSERT OR REPLACE INTO box_pets (
+                            pet_uid, username, server_id, box_page, box_slot, pet_id, name, level, exp,
+                            cur_hp, max_hp, atk, def, spatk, spdef, speed, star, breakthrough_stage,
+                            iv_hp, iv_atk, iv_def, iv_spatk, iv_spdef, iv_speed,
+                            ev_hp, ev_atk, ev_def, ev_spatk, ev_spdef, ev_speed,
+                            nature, skill_lv_0, skill_lv_1, skill_lv_2, skill_lv_3,
+                            held_item_id, berry_item_id
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        puid, uname, server_id, idx // 30, idx % 30, pet.get('id', 1), pet.get('name', 'Pet'),
+                        pet.get('level', 1), pet.get('exp', 0), pet.get('currentHp', 100),
+                        pet.get('maxHp', 100), pet.get('atk', 50), pet.get('def', 50),
+                        pet.get('spatk', 50), pet.get('spdef', 50), pet.get('speed', 50),
+                        pet.get('star', 1), pet.get('breakthroughStage', 0),
+                        pet.get('ivHp', 15), pet.get('ivAtk', 15), pet.get('ivDef', 15),
+                        pet.get('ivSpAtk', 15), pet.get('ivSpDef', 15), pet.get('ivSpeed', 15),
+                        pet.get('evHp', 0), pet.get('evAtk', 0), pet.get('evDef', 0),
+                        pet.get('evSpAtk', 0), pet.get('evSpDef', 0), pet.get('evSpeed', 0),
+                        pet.get('nature', 'Hardy'),
+                        pet.get('skill_lv_0', 1), pet.get('skill_lv_1', 1), pet.get('skill_lv_2', 1), pet.get('skill_lv_3', 1),
+                        pet.get('heldItemId', 0), pet.get('berryItemId', 0)
                     ))
 
             # Bag Sync
             bag = body.get('bag', {})
             if isinstance(bag, dict):
+                sconn.execute("DELETE FROM bag_items WHERE username = ? AND server_id = ?", (uname, server_id))
                 for item_id, count in bag.items():
-                    sconn.execute("""
-                        INSERT OR REPLACE INTO bag_items (username, server_id, item_id, count)
-                        VALUES (?, ?, ?, ?)
-                    """, (uname, server_id, int(item_id), int(count)))
+                    if int(count) > 0:
+                        sconn.execute("""
+                            INSERT OR REPLACE INTO bag_items (username, server_id, item_id, count)
+                            VALUES (?, ?, ?, ?)
+                        """, (uname, server_id, int(item_id), int(count)))
 
             sconn.commit()
             sconn.close()
             return self._send_json(200, { 'success': True, 'message': 'Cloud progress synced successfully' })
 
-        # Pet Cultivation: Feed EXP Candy
-        if path == '/api/pet/feed_candy':
+        # if path == '/api/pet/feed_candy':
             uname = (body.get('username') or '').strip()
             server_id = body.get('server_id', 1)
             pet_uid = body.get('pet_uid')
