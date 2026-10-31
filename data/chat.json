@@ -1,0 +1,36 @@
+[
+  {
+    "sender": "AshKetchum",
+    "level": 45,
+    "avatar": "player/touxiang1.png",
+    "channel": "World",
+    "text": "Welcome to Pocket Fantasy Online!",
+    "time": 1793382022.6327016
+  },
+  {
+    "sender": "MistyGirl",
+    "level": 38,
+    "avatar": "player/touxiang2.png",
+    "channel": "World",
+    "text": "Water-type gym in Cerulean is open for challenges!",
+    "time": 1793383822.6327045
+  },
+  {
+    "sender": "System",
+    "level": 99,
+    "avatar": "player/touxiang1.png",
+    "channel": "System",
+    "text": "Server 1: Pallet Town is live and operational.",
+    "time": 1793385022.6327052
+  },
+  {
+    "id": 4,
+    "sender": "TestTrainer",
+    "level": 1,
+    "avatar": "player/touxiang1.png",
+    "vip": 0,
+    "channel": "World",
+    "text": "Hello World!",
+    "time": 1793385624.0480676
+  }
+]

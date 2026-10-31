@@ -1,0 +1,42 @@
+{
+  "k_s1": {
+    "updatedAt": "2026-10-31 09:07:37",
+    "profile": {
+      "name": "Ash Ketchum",
+      "gender": 0,
+      "customAvatar": "",
+      "currentTitle": "Song of Lugia",
+      "level": 5,
+      "exp": 50,
+      "gold": 10000,
+      "diamonds": 100,
+      "stamina": 120,
+      "arenaRank": 9979
+    },
+    "team": [
+      {
+        "id": 4,
+        "name": "Charmander",
+        "level": 5,
+        "maxHp": 20,
+        "currentHp": 20,
+        "atk": 11,
+        "def": 10,
+        "spatk": 12,
+        "spdef": 11,
+        "speed": 13,
+        "star": 1,
+        "breakthroughStage": 0,
+        "ivHp": 15,
+        "ivAtk": 15,
+        "ivDef": 15,
+        "ivSpAtk": 15,
+        "ivSpDef": 15,
+        "ivSpeed": 15
+      }
+    ],
+    "stage": 1,
+    "box": [],
+    "bag": []
+  }
+}

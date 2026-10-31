@@ -1,0 +1,12 @@
+{
+  "name": "pocket-fantasy-online-server",
+  "version": "1.0.0",
+  "description": "Dedicated Online Multiplayer Server for Pocket Fantasy",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
