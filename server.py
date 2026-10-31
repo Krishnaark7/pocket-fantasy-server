@@ -26,6 +26,22 @@ import json
 import os
 import sys
 import time
+
+class NullWriter:
+    def write(self, s): pass
+    def flush(self): pass
+
+if sys.stdout is None:
+    sys.stdout = NullWriter()
+elif hasattr(sys.stdout, 'reconfigure'):
+    try: sys.stdout.reconfigure(encoding='utf-8')
+    except Exception: pass
+
+if sys.stderr is None:
+    sys.stderr = NullWriter()
+elif hasattr(sys.stderr, 'reconfigure'):
+    try: sys.stderr.reconfigure(encoding='utf-8')
+    except Exception: pass
 import hashlib
 import secrets
 import base64
@@ -226,6 +242,53 @@ def init_server_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    
+    CREATE TABLE IF NOT EXISTS league_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        season_id INTEGER DEFAULT 1,
+        phase TEXT DEFAULT 'ENROLL',
+        phase_override TEXT DEFAULT '',
+        phase_end_time INTEGER DEFAULT 0,
+        updated_at INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS league_enrollments (
+        username TEXT,
+        division INTEGER,
+        trainer_level INTEGER,
+        roster_json TEXT,
+        enrolled_at INTEGER,
+        PRIMARY KEY (username, division)
+    );
+
+    CREATE TABLE IF NOT EXISTS league_knockouts (
+        username TEXT,
+        division INTEGER,
+        points INTEGER DEFAULT 0,
+        wins INTEGER DEFAULT 0,
+        losses INTEGER DEFAULT 0,
+        matches_played INTEGER DEFAULT 0,
+        updated_at INTEGER,
+        PRIMARY KEY (username, division)
+    );
+
+    CREATE TABLE IF NOT EXISTS league_brackets (
+        division INTEGER,
+        stage TEXT,
+        match_index INTEGER,
+        player1_name TEXT,
+        player1_pet_id INTEGER,
+        player1_level INTEGER,
+        player1_score INTEGER DEFAULT 0,
+        player2_name TEXT,
+        player2_pet_id INTEGER,
+        player2_level INTEGER,
+        player2_score INTEGER DEFAULT 0,
+        winner_name TEXT,
+        status TEXT DEFAULT 'pending',
+        PRIMARY KEY (division, stage, match_index)
+    );
+
     CREATE TABLE IF NOT EXISTS pvp_records (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         p1_name TEXT NOT NULL,
@@ -239,6 +302,14 @@ def init_server_db():
     conn.close()
 
 init_server_db()
+
+# Ensure default league state row
+def ensure_league_state():
+    conn = get_server_db()
+    conn.execute("INSERT OR IGNORE INTO league_state (id, season_id, phase, phase_override, phase_end_time, updated_at) VALUES (1, 1, 'ENROLL', '', 0, 0)")
+    conn.commit()
+    conn.close()
+ensure_league_state()
 
 # In-memory session and active matchmaking rooms
 active_rooms = {}
@@ -336,7 +407,208 @@ def refresh_character_stamina(char_row, conn):
     return stamina
 
 
+
+# =============================================================================
+# Authentic Master League (Dashiliansai / 大师联赛) Engine
+# =============================================================================
+def get_league_phase_and_schedule():
+    sconn = get_server_db()
+    st = sconn.execute("SELECT season_id, phase, phase_override, phase_end_time FROM league_state WHERE id = 1").fetchone()
+    sconn.close()
+
+    season_id = st['season_id'] if st else 1
+    override = (st['phase_override'] if st else '').strip().upper()
+
+    now = time.localtime()
+    # 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+    wday = now.tm_wday
+    hour = now.tm_hour
+    minute = now.tm_min
+    time_val = hour * 60 + minute
+
+    auto_phase = 'ENROLL'
+    auto_name = 'Phase 1: League Enrollment (Mon-Wed 16:30)'
+    auto_desc = 'Sign up and configure your 12 or 36 Pokemon tournament roster. Knockout battles start Wednesday 17:30.'
+
+    if wday < 2 or (wday == 2 and time_val < (16 * 60 + 30)):
+        auto_phase = 'ENROLL'
+        auto_name = 'Phase 1: League Enrollment (Mon-Wed 16:30)'
+        auto_desc = 'Sign up and configure your 12 or 36 Pokemon tournament roster.'
+    elif wday == 2 and time_val >= (16 * 60 + 30) and time_val < (17 * 60 + 30):
+        auto_phase = 'PREPARE_KNOCKOUT'
+        auto_name = 'Registration Closed (Knockouts Starting Soon)'
+        auto_desc = 'Matchmaker opens at 17:30 today for live 6v6 Knockouts.'
+    elif wday == 2 and time_val >= (17 * 60 + 30) and time_val < (19 * 60 + 30):
+        auto_phase = 'KNOCKOUT'
+        auto_name = 'Phase 2: Live Knockout Battles (Wed 17:30 - 19:30)'
+        auto_desc = 'Queue in 1-minute matchmaking! Winner gets +2 points. Top 16 advance to Friday elimination.'
+    elif (wday == 2 and time_val >= (19 * 60 + 30)) or wday == 3 or (wday == 4 and time_val < (17 * 60 + 30)):
+        auto_phase = 'PREPARE_TOP16'
+        auto_name = 'Top 16 Finalists Seeded'
+        auto_desc = 'Top 16 contenders from Knockouts confirmed. Best of 3 battles start Friday 17:30.'
+    elif wday == 4 and time_val >= (17 * 60 + 30):
+        auto_phase = 'TOP16'
+        auto_name = 'Phase 3: Top 16 Elimination (Friday 17:30 - Best of 3)'
+        auto_desc = '16 finalists clash in Best of 3 matches! 8 winners advance to Saturday finals. Spectating available.'
+    elif wday == 5 and time_val < (17 * 60 + 30):
+        auto_phase = 'PREPARE_FINALS'
+        auto_name = 'Top 8 Finalists Confirmed'
+        auto_desc = 'Quarterfinals, Semifinals, and Grand Final commence Saturday 17:30.'
+    elif wday == 5 and time_val >= (17 * 60 + 30):
+        auto_phase = 'FINALS'
+        auto_name = 'Phase 4: Top 8 & Grand Championship (Saturday 17:30)'
+        auto_desc = 'Live Quarterfinals, Semifinals & Finals! Battle or spectate live for the League Trophy.'
+    else:
+        auto_phase = 'AWARDS'
+        auto_name = 'Phase 5: Season Hall of Fame & Awards'
+        auto_desc = 'Championship conclusion. Claim diamonds, trophies, and tournament honor.'
+
+    current_phase = override if override in ['ENROLL', 'KNOCKOUT', 'TOP16', 'FINALS', 'AWARDS', 'PREPARE_KNOCKOUT', 'PREPARE_TOP16', 'PREPARE_FINALS'] else auto_phase
+
+    phase_titles = {
+        'ENROLL': ('Phase 1: League Enrollment (Mon-Wed 16:30)', 'Sign up and configure your 12 or 36 Pokemon tournament roster. Knockouts start Wednesday 17:30.'),
+        'PREPARE_KNOCKOUT': ('Registration Closed (Knockouts at 17:30)', 'Matchmaker opens at 17:30 today for live 6v6 Knockouts.'),
+        'KNOCKOUT': ('Phase 2: Live Knockout Battles (Wed 17:30 - 19:30)', 'Queue in 1-minute matchmaking! Winner gets +2 points. Top 16 advance to Friday elimination.'),
+        'PREPARE_TOP16': ('Top 16 Finalists Seeded', 'Top 16 contenders from Knockouts confirmed. Best of 3 battles start Friday 17:30.'),
+        'TOP16': ('Phase 3: Top 16 Elimination (Friday 17:30 - Best of 3)', '16 finalists clash in Best of 3 matches! 8 winners advance to Saturday finals. Spectating available.'),
+        'PREPARE_FINALS': ('Top 8 Finalists Confirmed', 'Quarterfinals, Semifinals, and Grand Final commence Saturday 17:30.'),
+        'FINALS': ('Phase 4: Top 8 & Grand Championship (Saturday 17:30)', 'Live Quarterfinals, Semifinals & Finals! Battle or spectate live for the League Trophy.'),
+        'AWARDS': ('Phase 5: Season Hall of Fame & Awards', 'Championship conclusion. Claim diamonds, trophies, and tournament honor.')
+    }
+
+    t_name, t_desc = phase_titles.get(current_phase, (auto_name, auto_desc))
+
+    return {
+        'season_id': season_id,
+        'phase': current_phase,
+        'phase_name': t_name,
+        'phase_desc': t_desc,
+        'is_overridden': bool(override),
+        'timestamp': int(time.time())
+    }
+
+def get_division_for_level(level):
+    if level <= 59:
+        return 1 # Silver League (白银联赛)
+    elif level <= 69:
+        return 2 # Gold League (黄金联赛)
+    else:
+        return 3 # Master League (大师联赛)
+
+def get_division_info(div_id):
+    info = {
+        1: { 'id': 1, 'name': 'Silver League', 'name_cn': '白银联赛', 'min_lv': 1, 'max_lv': 59, 'desc': 'Trainers Level 1 - 59' },
+        2: { 'id': 2, 'name': 'Gold League', 'name_cn': '黄金联赛', 'min_lv': 60, 'max_lv': 69, 'desc': 'Trainers Level 60 - 69' },
+        3: { 'id': 3, 'name': 'Master League', 'name_cn': '大师联赛', 'min_lv': 70, 'max_lv': 100, 'desc': 'Trainers Level 70+' }
+    }
+    return info.get(div_id, info[1])
+
+def seed_authentic_tournament_bracket(division):
+    sconn = get_server_db()
+    c = sconn.cursor()
+
+    existing = c.execute("SELECT COUNT(*) FROM league_brackets WHERE division = ?", (division,)).fetchone()[0]
+    if existing > 0:
+        sconn.close()
+        return
+
+    top_players = c.execute("SELECT username, points FROM league_knockouts WHERE division = ? ORDER BY points DESC, wins DESC LIMIT 16", (division,)).fetchall()
+    candidates = []
+    for p in top_players:
+        ch = c.execute("SELECT level FROM characters WHERE username = ?", (p['username'],)).fetchone()
+        lvl = ch['level'] if ch else 50
+        lead = c.execute("SELECT pet_id FROM team_pets WHERE username = ? AND slot = 0", (p['username'],)).fetchone()
+        pet_id = lead['pet_id'] if lead else 6
+        candidates.append({ 'name': p['username'], 'level': lvl, 'pet_id': pet_id })
+
+    div_bots = {
+        1: [
+            ("Ethan", 58, 157), ("Kris", 57, 160), ("Silver", 59, 154), ("Tyler", 56, 18),
+            ("Diana", 55, 121), ("Cal", 57, 68), ("Carrie", 56, 38), ("Brock", 58, 95),
+            ("Misty", 58, 121), ("Lt. Surge", 59, 26), ("Erika", 57, 45), ("Sabrina", 59, 65),
+            ("Koga", 58, 110), ("Blaine", 59, 78), ("Giovanni", 59, 34), ("Rival Green", 59, 3)
+        ],
+        2: [
+            ("Wally", 68, 282), ("Brendan", 67, 254), ("May", 68, 257), ("Steven", 69, 376),
+            ("Wallace", 68, 350), ("Roxanne", 65, 299), ("Brawly", 66, 297), ("Wattson", 67, 310),
+            ("Flannery", 68, 323), ("Norman", 69, 289), ("Winona", 67, 334), ("Tate", 68, 337),
+            ("Liza", 68, 338), ("Juan", 68, 364), ("Sidney", 69, 359), ("Phoebe", 69, 356)
+        ],
+        3: [
+            ("Red", 88, 6), ("Blue", 87, 9), ("Lance", 85, 149), ("Cynthia", 87, 445),
+            ("Leon", 86, 6), ("Ash Ketchum", 88, 25), ("Steven Stone", 86, 376), ("Diantha", 85, 282),
+            ("Alder", 84, 637), ("Iris", 85, 612), ("Lucas", 83, 389), ("Dawn", 83, 395),
+            ("Barry", 84, 398), ("Volkner", 84, 405), ("Flint", 85, 392), ("Lucian", 85, 437)
+        ]
+    }
+
+    fill_list = div_bots.get(division, div_bots[1])
+    idx = 0
+    while len(candidates) < 16 and idx < len(fill_list):
+        bname, blvl, bpet = fill_list[idx]
+        candidates.append({ 'name': bname, 'level': blvl, 'pet_id': bpet })
+        c.execute("INSERT OR IGNORE INTO league_knockouts (username, division, points, wins, losses, matches_played, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?)",
+                  (bname, division, max(2, (16 - idx) * 4), 16 - idx, 16 - idx, int(time.time())))
+        idx += 1
+
+    top16_winners = []
+    for m in range(8):
+        p1 = candidates[m]
+        p2 = candidates[15 - m]
+        s1 = 2
+        s2 = random.choice([0, 1])
+        winner = p1['name']
+        top16_winners.append(p1)
+        c.execute("""
+            INSERT OR REPLACE INTO league_brackets (division, stage, match_index, player1_name, player1_pet_id, player1_level, player1_score, player2_name, player2_pet_id, player2_level, player2_score, winner_name, status)
+            VALUES (?, 'top16', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'finished')
+        """, (division, m, p1['name'], p1['pet_id'], p1['level'], s1, p2['name'], p2['pet_id'], p2['level'], s2, winner))
+
+    top8_winners = []
+    for m in range(4):
+        p1 = top16_winners[m * 2]
+        p2 = top16_winners[m * 2 + 1]
+        s1 = 1
+        s2 = 0
+        winner = p1['name']
+        top8_winners.append(p1)
+        c.execute("""
+            INSERT OR REPLACE INTO league_brackets (division, stage, match_index, player1_name, player1_pet_id, player1_level, player1_score, player2_name, player2_pet_id, player2_level, player2_score, winner_name, status)
+            VALUES (?, 'top8', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'finished')
+        """, (division, m, p1['name'], p1['pet_id'], p1['level'], s1, p2['name'], p2['pet_id'], p2['level'], s2, winner))
+
+    semi_winners = []
+    for m in range(2):
+        p1 = top8_winners[m * 2]
+        p2 = top8_winners[m * 2 + 1]
+        s1 = 1
+        s2 = 0
+        winner = p1['name']
+        semi_winners.append(p1)
+        c.execute("""
+            INSERT OR REPLACE INTO league_brackets (division, stage, match_index, player1_name, player1_pet_id, player1_level, player1_score, player2_name, player2_pet_id, player2_level, player2_score, winner_name, status)
+            VALUES (?, 'semi', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'finished')
+        """, (division, m, p1['name'], p1['pet_id'], p1['level'], s1, p2['name'], p2['pet_id'], p2['level'], s2, winner))
+
+    p1 = semi_winners[0]
+    p2 = semi_winners[1]
+    winner = p1['name']
+    c.execute("""
+        INSERT OR REPLACE INTO league_brackets (division, stage, match_index, player1_name, player1_pet_id, player1_level, player1_score, player2_name, player2_pet_id, player2_level, player2_score, winner_name, status)
+        VALUES (?, 'final', 0, ?, ?, ?, 1, ?, ?, ?, 0, ?, 'finished')
+    """, (division, p1['name'], p1['pet_id'], p1['level'], p2['name'], p2['pet_id'], p2['level'], winner))
+
+    sconn.commit()
+    sconn.close()
+
+
 class GameServerHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        try:
+            if sys.stderr:
+                sys.stderr.write("%s - - [%s] %s\n" % (self.address_string(), self.log_date_time_string(), format % args))
+        except Exception:
+            pass
     def _send_json(self, status, data):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -344,7 +616,7 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         self.end_headers()
-        self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
+        self.wfile.write(json.dumps(data).encode('utf-8'))
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -641,6 +913,225 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
                 'opponent': opponent,
                 'opponent_action': opp_act,
                 'winner': r.get('winner')
+            })
+
+        
+        # =====================================================================
+        # Authentic Master League (Dashiliansai) GET Endpoints
+        # =====================================================================
+        if path == '/api/league/info':
+            sconn = get_server_db()
+            sched = get_league_phase_and_schedule()
+            div_id = int(qs.get('division', [1])[0])
+            uname = qs.get('username', [''])[0]
+
+            user_div = 1
+            user_lvl = 1
+            if uname:
+                ch = sconn.execute("SELECT level FROM characters WHERE username = ?", (uname,)).fetchone()
+                if ch:
+                    user_lvl = ch['level']
+                    user_div = get_division_for_level(user_lvl)
+
+            target_div = div_id if div_id in [1, 2, 3] else user_div
+            div_info = get_division_info(target_div)
+
+            enrolled = False
+            roster_count = 0
+            if uname:
+                enr = sconn.execute("SELECT roster_json FROM league_enrollments WHERE username = ? AND division = ?", (uname, target_div)).fetchone()
+                if enr:
+                    enrolled = True
+                    try:
+                        roster = json.loads(enr['roster_json'])
+                        roster_count = len(roster)
+                    except:
+                        roster_count = 0
+
+            tot_enrolled = sconn.execute("SELECT COUNT(*) as cnt FROM league_enrollments WHERE division = ?", (target_div,)).fetchone()['cnt']
+            sim_count = max(tot_enrolled, 128 + (target_div * 42))
+
+            user_stats = {'points': 0, 'wins': 0, 'losses': 0, 'matches_played': 0, 'rank': 0}
+            if uname:
+                ko = sconn.execute("SELECT points, wins, losses, matches_played FROM league_knockouts WHERE username = ? AND division = ?", (uname, target_div)).fetchone()
+                if ko:
+                    better = sconn.execute("SELECT COUNT(*) as cnt FROM league_knockouts WHERE division = ? AND points > ?", (target_div, ko['points'])).fetchone()['cnt']
+                    user_stats = {
+                        'points': ko['points'],
+                        'wins': ko['wins'],
+                        'losses': ko['losses'],
+                        'matches_played': ko['matches_played'],
+                        'rank': better + 1
+                    }
+
+            sconn.close()
+
+            return self._send_json(200, {
+                'success': True,
+                'schedule': sched,
+                'division': div_info,
+                'user_level': user_lvl,
+                'user_division': user_div,
+                'is_enrolled': enrolled,
+                'roster_count': roster_count,
+                'total_enrolled': sim_count,
+                'user_stats': user_stats,
+                'server_time': int(time.time())
+            })
+
+        if path == '/api/league/knockout/rankings':
+            division = int(qs.get('division', [1])[0])
+            limit = int(qs.get('limit', [30])[0])
+
+            sconn = get_server_db()
+            seed_authentic_tournament_bracket(division)
+
+            rows = sconn.execute("""
+                SELECT k.username, k.points, k.wins, k.losses, k.matches_played, c.level, c.title, c.avatar
+                FROM league_knockouts k
+                LEFT JOIN characters c ON k.username = c.username
+                WHERE k.division = ?
+                ORDER BY k.points DESC, k.wins DESC, k.matches_played ASC
+                LIMIT ?
+            """, (division, limit)).fetchall()
+
+            rankings = []
+            for idx, r in enumerate(rows, 1):
+                lead = sconn.execute("SELECT pet_id FROM team_pets WHERE username = ? ORDER BY slot ASC LIMIT 1", (r['username'],)).fetchone()
+                lead_id = lead['pet_id'] if lead else (157 if division==1 else (282 if division==2 else 6))
+                rankings.append({
+                    'rank': idx,
+                    'username': r['username'],
+                    'level': r['level'] or (55 if division==1 else (65 if division==2 else 85)),
+                    'title': r['title'] or 'League Contender',
+                    'avatar': r['avatar'] or 'player/touxiang1.png',
+                    'points': r['points'],
+                    'wins': r['wins'],
+                    'losses': r['losses'],
+                    'matches_played': r['matches_played'],
+                    'lead_pet_id': lead_id
+                })
+            sconn.close()
+
+            return self._send_json(200, {
+                'success': True,
+                'division': division,
+                'rankings': rankings
+            })
+
+        if path == '/api/league/bracket/16v8':
+            division = int(qs.get('division', [1])[0])
+            seed_authentic_tournament_bracket(division)
+
+            sconn = get_server_db()
+            matches_data = sconn.execute("""
+                SELECT match_index, player1_name, player1_pet_id, player1_level, player1_score,
+                       player2_name, player2_pet_id, player2_level, player2_score, winner_name, status
+                FROM league_brackets
+                WHERE division = ? AND stage = 'top16'
+                ORDER BY match_index ASC
+            """, (division,)).fetchall()
+            sconn.close()
+
+            matches = []
+            for m in matches_data:
+                matches.append({
+                    'match_index': m['match_index'],
+                    'player1': { 'name': m['player1_name'], 'pet_id': m['player1_pet_id'], 'level': m['player1_level'], 'score': m['player1_score'] },
+                    'player2': { 'name': m['player2_name'], 'pet_id': m['player2_pet_id'], 'level': m['player2_level'], 'score': m['player2_score'] },
+                    'winner_name': m['winner_name'],
+                    'status': m['status']
+                })
+
+            return self._send_json(200, {
+                'success': True,
+                'division': division,
+                'stage': 'top16',
+                'matches': matches
+            })
+
+        if path == '/api/league/bracket/top8':
+            division = int(qs.get('division', [1])[0])
+            seed_authentic_tournament_bracket(division)
+
+            sconn = get_server_db()
+            all_b = sconn.execute("""
+                SELECT stage, match_index, player1_name, player1_pet_id, player1_level, player1_score,
+                       player2_name, player2_pet_id, player2_level, player2_score, winner_name, status
+                FROM league_brackets
+                WHERE division = ? AND stage IN ('top8', 'semi', 'final')
+                ORDER BY stage, match_index ASC
+            """, (division,)).fetchall()
+            sconn.close()
+
+            top8_list = []
+            semi_list = []
+            final_match = None
+            champion = None
+
+            for m in all_b:
+                obj = {
+                    'match_index': m['match_index'],
+                    'player1': { 'name': m['player1_name'], 'pet_id': m['player1_pet_id'], 'level': m['player1_level'], 'score': m['player1_score'] },
+                    'player2': { 'name': m['player2_name'], 'pet_id': m['player2_pet_id'], 'level': m['player2_level'], 'score': m['player2_score'] },
+                    'winner_name': m['winner_name'],
+                    'status': m['status']
+                }
+                if m['stage'] == 'top8':
+                    top8_list.append(obj)
+                elif m['stage'] == 'semi':
+                    semi_list.append(obj)
+                elif m['stage'] == 'final':
+                    final_match = obj
+                    champion = {
+                        'name': m['winner_name'],
+                        'pet_id': m['player1_pet_id'] if m['winner_name'] == m['player1_name'] else m['player2_pet_id'],
+                        'level': m['player1_level'] if m['winner_name'] == m['player1_name'] else m['player2_level'],
+                        'trophy_title': 'Grand League Champion'
+                    }
+
+            return self._send_json(200, {
+                'success': True,
+                'division': division,
+                'top8': top8_list,
+                'semi': semi_list,
+                'final': final_match,
+                'champion': champion
+            })
+
+        if path == '/api/league/spectate':
+            division = int(qs.get('division', [1])[0])
+            stage = qs.get('stage', ['top16'])[0]
+            match_index = int(qs.get('match_index', [0])[0])
+
+            sconn = get_server_db()
+            m = sconn.execute("""
+                SELECT player1_name, player1_pet_id, player1_level, player1_score,
+                       player2_name, player2_pet_id, player2_level, player2_score, winner_name
+                FROM league_brackets
+                WHERE division = ? AND stage = ? AND match_index = ?
+            """, (division, stage, match_index)).fetchone()
+            sconn.close()
+
+            if not m:
+                return self._send_json(404, { 'success': False, 'error': 'Match not found' })
+
+            events = [
+                { 'turn': 1, 'attacker': m['player1_name'], 'pet_id': m['player1_pet_id'], 'move': 'Thunderbolt', 'damage': 1840, 'text': f"{m['player1_name']}'s Pokemon unleashed Thunderbolt!" },
+                { 'turn': 2, 'attacker': m['player2_name'], 'pet_id': m['player2_pet_id'], 'move': 'Hydro Pump', 'damage': 1720, 'text': f"{m['player2_name']}'s Pokemon counter-attacked with Hydro Pump!" },
+                { 'turn': 3, 'attacker': m['player1_name'], 'pet_id': m['player1_pet_id'], 'move': 'Dragon Claw', 'damage': 2150, 'text': f"{m['player1_name']}'s Pokemon executed critical Dragon Claw!" },
+                { 'turn': 4, 'attacker': m['player1_name'], 'pet_id': m['player1_pet_id'], 'move': 'Hyper Beam', 'damage': 3400, 'text': f"{m['winner_name']} secured victory with a decisive Hyper Beam!" }
+            ]
+
+            return self._send_json(200, {
+                'success': True,
+                'division': division,
+                'stage': stage,
+                'match_index': match_index,
+                'player1': { 'name': m['player1_name'], 'pet_id': m['player1_pet_id'], 'level': m['player1_level'], 'score': m['player1_score'] },
+                'player2': { 'name': m['player2_name'], 'pet_id': m['player2_pet_id'], 'level': m['player2_level'], 'score': m['player2_score'] },
+                'winner_name': m['winner_name'],
+                'events': events
             })
 
         self._send_json(404, { 'success': False, 'error': 'Endpoint not found' })
@@ -1653,6 +2144,209 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
             a = int(((3 * max_hp - 2 * cur_hp) * base_catch * ball_mult) / (3 * max_hp)) * status_mult
             success = (a >= 255) or (secrets.randbelow(255) < a)
             return self._send_json(200, { 'success': True, 'caught': success, 'catch_value': a })
+
+        
+        # =====================================================================
+        # Authentic Master League (Dashiliansai) POST Endpoints
+        # =====================================================================
+        if path == '/api/league/enroll':
+            uname = body.get('username')
+            division = int(body.get('division', 1))
+            roster = body.get('roster', [])
+
+            if not uname:
+                return self._send_json(400, { 'success': False, 'error': 'Missing username' })
+
+            sched = get_league_phase_and_schedule()
+            if sched['phase'] not in ['ENROLL'] and not sched['is_overridden']:
+                return self._send_json(400, { 'success': False, 'error': 'Registration is currently closed for this phase' })
+
+            sconn = get_server_db()
+            ch = sconn.execute("SELECT level FROM characters WHERE username = ?", (uname,)).fetchone()
+            if not ch:
+                sconn.close()
+                return self._send_json(404, { 'success': False, 'error': 'Character not found' })
+
+            lvl = ch['level']
+            req_div = get_division_for_level(lvl)
+            if division != req_div:
+                d_req = get_division_info(req_div)
+                sconn.close()
+                return self._send_json(400, { 'success': False, 'error': f"Your trainer level ({lvl}) qualifies for {d_req['name']} only" })
+
+            now_ts = int(time.time())
+            roster_str = json.dumps(roster)
+            sconn.execute("""
+                INSERT OR REPLACE INTO league_enrollments (username, division, trainer_level, roster_json, enrolled_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (uname, division, lvl, roster_str, now_ts))
+
+            sconn.execute("""
+                INSERT OR IGNORE INTO league_knockouts (username, division, points, wins, losses, matches_played, updated_at)
+                VALUES (?, ?, 0, 0, 0, 0, ?)
+            """, (uname, division, now_ts))
+
+            sconn.commit()
+            sconn.close()
+
+            return self._send_json(200, {
+                'success': True,
+                'message': 'Successfully enrolled in Master League!',
+                'division': division,
+                'roster_count': len(roster)
+            })
+
+        if path == '/api/league/knockout/match':
+            uname = body.get('username')
+            division = int(body.get('division', 1))
+
+            sched = get_league_phase_and_schedule()
+            if sched['phase'] not in ['KNOCKOUT'] and not sched['is_overridden']:
+                return self._send_json(400, { 'success': False, 'error': 'Knockout matchmaking is not currently active' })
+
+            sconn = get_server_db()
+            opp_row = sconn.execute("""
+                SELECT username FROM league_knockouts
+                WHERE division = ? AND username != ?
+                ORDER BY RANDOM() LIMIT 1
+            """, (division, uname)).fetchone()
+
+            opp_name = opp_row['username'] if opp_row else None
+            opp_pets = []
+            opp_lvl = 55 if division==1 else (65 if division==2 else 85)
+
+            if opp_name:
+                ch = sconn.execute("SELECT level, avatar, title FROM characters WHERE username = ?", (opp_name,)).fetchone()
+                if ch:
+                    opp_lvl = ch['level']
+                tp = sconn.execute("SELECT pet_id, name, level, cur_hp, max_hp, atk, def, spatk, spdef, speed FROM team_pets WHERE username = ? ORDER BY slot ASC LIMIT 6", (opp_name,)).fetchall()
+                for p in tp:
+                    opp_pets.append({
+                        'pet_id': p['pet_id'],
+                        'name': p['name'],
+                        'level': p['level'],
+                        'hp': p['cur_hp'] or p['max_hp'],
+                        'max_hp': p['max_hp'],
+                        'attack': p['atk'],
+                        'defense': p['def'],
+                        'sp_attack': p['spatk'],
+                        'sp_defense': p['spdef'],
+                        'speed': p['speed']
+                    })
+
+            sconn.close()
+
+            if len(opp_pets) < 6:
+                div_pools = {
+                    1: [
+                        (157, 'Typhlosion'), (160, 'Feraligatr'), (154, 'Meganium'), (18, 'Pidgeot'),
+                        (26, 'Raichu'), (121, 'Starmie'), (95, 'Onix'), (68, 'Machamp'), (65, 'Alakazam')
+                    ],
+                    2: [
+                        (282, 'Gardevoir'), (254, 'Sceptile'), (257, 'Blaziken'), (260, 'Swampert'),
+                        (376, 'Metagross'), (350, 'Milotic'), (289, 'Slaking'), (334, 'Altaria'), (359, 'Absol')
+                    ],
+                    3: [
+                        (6, 'Charizard'), (9, 'Blastoise'), (3, 'Venusaur'), (149, 'Dragonite'),
+                        (445, 'Garchomp'), (25, 'Pikachu'), (448, 'Lucario'), (150, 'Mewtwo'), (384, 'Rayquaza')
+                    ]
+                }
+                pool = div_pools.get(division, div_pools[1])
+                chosen = random.sample(pool, 6)
+                if not opp_name:
+                    div_names = {
+                        1: ['Silver Contender Ethan', 'Ace Trainer Tyler', 'Gym Leader Misty', 'Gym Leader Brock'],
+                        2: ['Veteran Brendan', 'Elite Trainer May', 'Champion Steven', 'Gym Leader Wallace'],
+                        3: ['Master Champion Red', 'Dragon Master Lance', 'Sinnoh Champion Cynthia', 'Galar Champion Leon']
+                    }
+                    opp_name = random.choice(div_names.get(division, ['League Rival']))
+
+                opp_pets = []
+                for p_id, p_name in chosen:
+                    base_hp = opp_lvl * 55 + random.randint(100, 300)
+                    opp_pets.append({
+                        'pet_id': p_id,
+                        'name': p_name,
+                        'level': opp_lvl,
+                        'hp': base_hp,
+                        'max_hp': base_hp,
+                        'attack': opp_lvl * 14 + random.randint(20, 60),
+                        'defense': opp_lvl * 12 + random.randint(20, 50),
+                        'sp_attack': opp_lvl * 15 + random.randint(20, 60),
+                        'sp_defense': opp_lvl * 12 + random.randint(20, 50),
+                        'speed': opp_lvl * 13 + random.randint(20, 50)
+                    })
+
+            return self._send_json(200, {
+                'success': True,
+                'opponent': {
+                    'name': opp_name,
+                    'level': opp_lvl,
+                    'avatar': 'player/touxiang2.png',
+                    'title': 'League Knockout Challenger',
+                    'pets': opp_pets
+                }
+            })
+
+        if path == '/api/league/knockout/result':
+            uname = body.get('username')
+            division = int(body.get('division', 1))
+            victory = bool(body.get('victory', False))
+
+            if not uname:
+                return self._send_json(400, { 'success': False, 'error': 'Missing username' })
+
+            points_gain = 2 if victory else 0
+            wins_gain = 1 if victory else 0
+            loss_gain = 0 if victory else 1
+            now_ts = int(time.time())
+
+            sconn = get_server_db()
+            sconn.execute("""
+                INSERT INTO league_knockouts (username, division, points, wins, losses, matches_played, updated_at)
+                VALUES (?, ?, ?, ?, ?, 1, ?)
+                ON CONFLICT(username, division) DO UPDATE SET
+                    points = points + ?,
+                    wins = wins + ?,
+                    losses = losses + ?,
+                    matches_played = matches_played + 1,
+                    updated_at = ?
+            """, (uname, division, points_gain, wins_gain, loss_gain, now_ts, points_gain, wins_gain, loss_gain, now_ts))
+
+            row = sconn.execute("SELECT points, wins, losses, matches_played FROM league_knockouts WHERE username = ? AND division = ?", (uname, division)).fetchone()
+            better = sconn.execute("SELECT COUNT(*) as cnt FROM league_knockouts WHERE division = ? AND points > ?", (division, row['points'])).fetchone()['cnt']
+            rank = better + 1
+
+            sconn.commit()
+            sconn.close()
+
+            return self._send_json(200, {
+                'success': True,
+                'points_earned': points_gain,
+                'total_points': row['points'],
+                'wins': row['wins'],
+                'losses': row['losses'],
+                'matches_played': row['matches_played'],
+                'current_rank': rank
+            })
+
+        if path == '/api/league/set_phase':
+            new_phase = body.get('phase', '').strip().upper()
+            valid = ['', 'ENROLL', 'PREPARE_KNOCKOUT', 'KNOCKOUT', 'PREPARE_TOP16', 'TOP16', 'PREPARE_FINALS', 'FINALS', 'AWARDS']
+            if new_phase not in valid:
+                return self._send_json(400, { 'success': False, 'error': f'Invalid phase. Choose from {valid}' })
+
+            sconn = get_server_db()
+            sconn.execute("UPDATE league_state SET phase_override = ?, updated_at = ? WHERE id = 1", (new_phase, int(time.time())))
+            sconn.commit()
+            sconn.close()
+
+            sched = get_league_phase_and_schedule()
+            return self._send_json(200, {
+                'success': True,
+                'message': f"League phase successfully set to: {sched['phase']}",
+                'schedule': sched
+            })
 
         self._send_json(404, { 'success': False, 'error': 'Endpoint not found' })
 
