@@ -34,6 +34,12 @@ import random
 from urllib.parse import urlparse, parse_qs
 
 PORT = int(os.environ.get('PORT', 8088))
+if len(sys.argv) > 1 and sys.argv[1].isdigit():
+    PORT = int(sys.argv[1])
+elif '--port' in sys.argv:
+    idx = sys.argv.index('--port')
+    if idx + 1 < len(sys.argv) and sys.argv[idx + 1].isdigit():
+        PORT = int(sys.argv[idx + 1])
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
