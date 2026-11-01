@@ -144,21 +144,21 @@ def get_or_create_character(account):
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    acc = c.execute("SELECT * FROM accounts WHERE username = ?", (account,)).fetchone()
+    acc = c.execute("SELECT * FROM accounts WHERE LOWER(username) = LOWER(?)", (account,)).fetchone()
     if not acc:
         c.execute("INSERT INTO accounts (username, password_hash, token) VALUES (?, 'guest_hash', ?)", (account, f"tok_{account}"))
         conn.commit()
 
-    char = c.execute("SELECT * FROM characters WHERE username = ? AND server_id = 1", (account,)).fetchone()
+    char = c.execute("SELECT * FROM characters WHERE LOWER(username) = LOWER(?) AND server_id = 1", (account,)).fetchone()
     if not char:
         c.execute("""INSERT INTO characters (username, server_id, name, gender, avatar, title, level, exp, gold, diamonds, stamina, max_stamina, vip_level, arena_rank, combat_power)
                      VALUES (?, 1, ?, 'male', 'avatar_01.png', 'Novice Trainer', 50, 1000, 500000, 5000, 120, 120, 10, 1500, 12500)""",
-                  (account, f"Ash_{account[:6]}"))
+                  (account, account))
         conn.commit()
-        char = c.execute("SELECT * FROM characters WHERE username = ? AND server_id = 1", (account,)).fetchone()
+        char = c.execute("SELECT * FROM characters WHERE LOWER(username) = LOWER(?) AND server_id = 1", (account,)).fetchone()
 
-    team = c.execute("SELECT pet_id FROM team_pets WHERE username = ? AND server_id = 1 ORDER BY slot ASC", (account,)).fetchall()
-    party_ids = [row['pet_id'] for row in team] if team else [1, 4, 7]
+    team = c.execute("SELECT pet_id FROM team_pets WHERE LOWER(username) = LOWER(?) AND server_id = 1 ORDER BY slot ASC", (account,)).fetchall()
+    party_ids = [row['pet_id'] for row in team] if team else [150, 10150, 1, 4, 7]
     conn.close()
     return char, party_ids
 
@@ -178,18 +178,18 @@ def handle_client_connection(sock, addr, server_ip=None):
             if cmd == 1:
                 send_tcp_packet(sock, 1, b'')
                 
-            # Opcode 50001: CLIENT_LOGIN_REQUEST
-            elif cmd == 50001:
+            # Opcode 50001 / 100001: CLIENT_LOGIN_REQUEST / CL_LOGIN_REQUEST
+            elif cmd in [50001, 100001]:
                 req = LoginRequestClass()
                 try:
                     req.ParseFromString(pkt.serialized)
-                    current_account = req.account if req.account else f"guest_{random.randint(10000, 99999)}"
+                    current_account = req.account if req.account else f"trainer_{random.randint(1000, 9999)}"
                 except Exception:
-                    current_account = f"guest_{random.randint(10000, 99999)}"
+                    current_account = f"trainer_{random.randint(1000, 9999)}"
                     
-                log(f"Opcode 50001 (CLIENT_LOGIN_REQUEST): Account='{current_account}'")
+                log(f"Opcode {cmd} (LOGIN_REQUEST): Account='{current_account}'")
                 resp = LoginResponseClass()
-                resp.result = 0
+                resp.result = 0  # enumResultSucc = 0
                 s = resp.servers.add()
                 s.id = 1
                 s.name = "Server 1: Kanto Global"
@@ -198,22 +198,25 @@ def handle_client_connection(sock, addr, server_ip=None):
                 s.is_new = True
                 resp.last_server_id = 1
                 resp.account = current_account
-                send_tcp_packet(sock, 50002, resp.SerializeToString())
-                log("Sent Opcode 50002 (CLIENT_LOGIN_RESPONSE)")
+                resp_cmd = 100002 if cmd == 100001 else 50002
+                send_tcp_packet(sock, resp_cmd, resp.SerializeToString())
+                log(f"Sent Opcode {resp_cmd} (LOGIN_RESPONSE) for '{current_account}'")
                 
-            # Opcode 10001: LOGIN_SERVER_REQUEST
-            elif cmd == 10001:
-                log(f"Opcode 10001 (LOGIN_SERVER_REQUEST) from '{current_account}'")
+            # Opcode 10001 / 100003: LOGIN_SERVER_REQUEST / CL_SEVER_DETAIL_REQUEST
+            elif cmd in [10001, 100003]:
+                log(f"Opcode {cmd} (SERVER_DETAIL_REQUEST) from '{current_account}'")
                 srv_resp = LoginServerResponseClass()
                 srv_resp.ip = server_ip
                 srv_resp.port = "9911"
                 srv_resp.uuid = current_account if current_account else "trainer_001"
-                send_tcp_packet(sock, 10002, srv_resp.SerializeToString())
-                log("Sent Opcode 10002 (LOGIN_SERVER_RESPONSE)")
+                srv_resp.locked_register = False
+                resp_cmd = 100004 if cmd == 100003 else 10002
+                send_tcp_packet(sock, resp_cmd, srv_resp.SerializeToString())
+                log(f"Sent Opcode {resp_cmd} (SERVER_DETAIL_RESPONSE)")
                 
-            # Opcode 50011: CLIENT_ENTER_GAME
-            elif cmd == 50011:
-                log(f"Opcode 50011 (CLIENT_ENTER_GAME) for '{current_account}'")
+            # Opcode 50011 / 200001: CLIENT_ENTER_GAME / CG_LOGIN_REQUEST
+            elif cmd in [50011, 200001]:
+                log(f"Opcode {cmd} (ENTER_GAME_REQUEST) for '{current_account}'")
                 char, party_ids = get_or_create_character(current_account if current_account else "trainer_001")
                 enter_resp = build_login2gameserver_response(
                     uuid=current_account if current_account else "trainer_001",
@@ -224,16 +227,22 @@ def handle_client_connection(sock, addr, server_ip=None):
                     level=char['level'],
                     party_ids=party_ids
                 )
-                send_tcp_packet(sock, 50012, enter_resp)
-                log(f"Sent Opcode 50012 (CLIENT_ENTER_GAME_RESPONSE) for '{char['name']}' (Lv.{char['level']})")
+                resp_cmd = 200002 if cmd == 200001 else 50012
+                send_tcp_packet(sock, resp_cmd, enter_resp)
+                log(f"Sent Opcode {resp_cmd} (ENTER_GAME_RESPONSE) for '{char['name']}' (Lv.{char['level']})")
                 
             # Opcode 50014: CLIENT_GET_TASKS_REQUEST
-            elif cmd == 50014:
-                send_tcp_packet(sock, 50015, b'')
+            elif cmd in [50014, 50015]:
+                send_tcp_packet(sock, cmd + 1, b'')
                 
             # Opcode 50111: CLIENT_GET_MAIL
-            elif cmd == 50111:
-                send_tcp_packet(sock, 50112, b'')
+            elif cmd in [50111, 50112]:
+                send_tcp_packet(sock, cmd + 1, b'')
+                
+            # Opcode 300001: MONSTER_BACKPACK_REQUEST
+            elif cmd == 300001:
+                log(f"Opcode 300001 (MONSTER_BACKPACK_REQUEST) for '{current_account}'")
+                send_tcp_packet(sock, 300002, b'')
                 
             else:
                 log(f"Received unhandled command: {cmd}")
