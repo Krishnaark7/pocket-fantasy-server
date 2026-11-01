@@ -1,0 +1,58 @@
+
+ClientGateStore.proto
+ClientGateCommon.proto"=
+StoreGoodsDataRequest
+
+store_type (
+sub_type ("+
+StoreGoodsFlushRequst
+
+store_type ("Ž
+StoreGoodsDataResponse'
+goods (2.ClientGate.BackpackItem
+sub_type (
+	time_left (
+
+flush_cost (
+
+flush_left ("Ï
+StoreGoodsFlushResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason'
+goods (2.ClientGate.BackpackItem
+	time_left (
+
+flush_cost (
+
+flush_left ("P
+StoreGoodsBuyRequst
+
+store_type (
+goods_id (
+goods_count ("i
+StoreGoodsBuyResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason"@
+StoreGoodsSellRequest'
+items (2.ClientGate.BackpackItem"O
+StoreGoodsSellResponse&
+result (2.ClientGate.EnumResult
+money ("
+PayDataRequest
+type ("A
+PayDataResponse
+data (	
+vip_lev (
+vip_cur ("q
+PayResultResponse
+
+id (&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason*¢
+enumPayPlatformType
+enumIOSPayAppStore
+enumIOSPayFujia
+enumIOSPayAibei
+enumAndroidPayGoogle
+enumAndroidPayNdb
+enumAndroidPayXiaomi

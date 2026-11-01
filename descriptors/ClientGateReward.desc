@@ -1,0 +1,16 @@
+
+ClientGateReward.proto
+ClientGateCommon.proto".
+LevelReward
+func_id (
+is_get (":
+LevelRewardList'
+reward (2.ClientGate.LevelReward"
+LevelRewardListRequest"B
+LevelRewardListResponse'
+reward (2.ClientGate.LevelReward"(
+LevelRewardGetRequest
+func_id ("Q
+LevelRewardGetResponse&
+result (2.ClientGate.EnumResult
+diamond (

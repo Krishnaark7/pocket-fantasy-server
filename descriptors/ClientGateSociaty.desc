@@ -1,0 +1,22 @@
+
+ClientGateSociaty.proto
+ClientGateCommon.protoMonster.protoClientGateFriend.proto"5
+SociatyList&
+	sociaties (2.ClientGate.Sociaty"A
+SociatySimpleList,
+	sociaties (2.ClientGate.SociatySimple"Ç
+SociatySimple
+uuid (	
+name (	
+leader_name (	
+level (
+members_count (
+members_count_max (
+notice (	
+seq (
+
+auto_level	 (
+leader_uuid
+ (	"!
+SociatyIDList
+soc_uuid (	

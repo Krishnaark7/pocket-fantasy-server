@@ -1,0 +1,33 @@
+
+ClientGateBoss.proto
+ClientGateCommon.proto"
+WorldBossInfo
+
+hp ("Ž
+WorldBossDataResponse
+
+id (-
+state (2.ClientGate.EnumWorldBossState
+to_time (
+cd_time (
+cd_cost (
+boss_hp (
+quality (&
+result (2.ClientGate.EnumResult(
+reason	 (2.ClientGate.FailedReason
+killer_nick
+ (	"@
+WorldBossBuyCdResponse&
+result (2.ClientGate.EnumResult">
+WorldBossRankItem
+rank (
+name (	
+point ("n
+WorldBossRankInfo+
+self (2.ClientGate.WorldBossRankItem,
+items (2.ClientGate.WorldBossRankItem*O
+EnumWorldBossState
+enumToBegin
+	enumToEnd
+enumEnd
+enumNone

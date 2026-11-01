@@ -1,0 +1,54 @@
+
+ClientGateBackpack.proto
+ClientGateCommon.protoMonster.proto"0
+	ItemCount
+item_id (
+
+item_count ("Q
+
+PropDetail
+gold (
+diamond ($
+items (2.ClientGate.ItemCount"
+BackpackRequest
+type (";
+BackpackResponse'
+items (2.ClientGate.BackpackItem"=
+TestBackpackRequest&
+item (2.ClientGate.BackpackItem"K
+UseItemRequest
+item_id (
+
+item_count (
+monster_uuid (	"‚
+UseItemResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason
+item_id (
+
+item_count (
+monster_uuid (	'
+items (2.ClientGate.BackpackItem(
+new_monster (2.ClientGate.Monster
+message (	"6
+ItemCountRequest
+item_id (
+	client_id ("O
+ItemCountResponse'
+items (2.ClientGate.BackpackItem
+	client_id ("!
+ComposeRequest
+item_id ("c
+ComposeResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason"4
+LoadItemRequest
+item_id (
+mon_uuid (	"d
+LoadItemResponse&
+result (2.ClientGate.EnumResult(
+new_monster (2.ClientGate.Monster"5
+ItemChangePush
+item_id (
+
+item_count (

@@ -1,0 +1,45 @@
+
+ClientGateKing.proto
+ClientGateMonster.protoCommon.proto"Ë
+KingRoadEnemyItem
+
+id (	
+enemy_id (
+
+enemy_name (	
+enemy_level ()
+monster_list (2.ClientGate.Monster
+status (
+
+trainer_id (
+att_add (
+def_add	 ("y
+KingRoadEnemyList+
+list (2.ClientGate.KingRoadEnemyItem
+left_num (
+canQuickBattle (
+score ("-
+KingRoadQuickBattleResponse
+result ("&
+KingRoadGetRewardRequest
+
+id (	"}
+KingRoadGetRewardResponse
+
+id (	
+gold ('
+items (2.ClientGate.GridItemInfo
+score (
+diamon ("G
+KingRoadMosterListResponse)
+monster_list (2.ClientGate.Monster"+
+KingRoadResettingResponse
+result ("*
+KingRoadIsSigninResponse
+result ("!
+KingRoadWipeRequest
+
+id (	"i
+KingRoadWipeResponse&
+result (2.ClientGate.EnumResult)
+rewards (2.ClientGate.GridItemInfo

@@ -3,3 +3,5 @@ cloudflared.exe
 __pycache__/
 *.vbs
 *.bat
+scratch/
+.env

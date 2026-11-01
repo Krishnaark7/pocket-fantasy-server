@@ -1,0 +1,27 @@
+
+Monster.proto
+ClientGate"A
+MonsterIconList.
+monster_icons (2.ClientGate.MonsterIcon"E
+MonsterIcon
+uuid (	
+lev (
+sex (
+pet_id ("
+MonsterUuidList
+uuid (	""
+MonsterPetIdList
+pet_id ("@
+MonsterSimpleList+
+monsters (2.ClientGate.MonsterSimple"—
+MonsterSimple
+uuid (	
+lev (
+sex (
+	character (
+pet_id (
+nick (	
+	is_locked (
+not_noticed_skills (	"4
+MonsterList%
+monsters (2.ClientGate.Monster

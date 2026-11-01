@@ -1,0 +1,87 @@
+
+ClientGateDraw.proto
+ClientGateCommon.protoMonster.proto"Ø
+DrawInfo)
+type (2.ClientGate.EnumMachineType
+time (
+one_coin (
+one_diamond (
+one_dis (
+ten_coin (
+ten_diamond (
+ten_dis (
+isFirst	 (
+
+free_count
+ ("J
+DrawInfoResponse"
+info (2.ClientGate.DrawInfo
+
+space_left ("h
+DrawResultRequest*
+mtype (2.ClientGate.EnumMachineType'
+dtype (2.ClientGate.EnumDrawType"B
+DrawResultItem
+itemid ( 
+mon (2.ClientGate.Monster"ö
+DrawResultResponse*
+mtype (2.ClientGate.EnumMachineType'
+dtype (2.ClientGate.EnumDrawType&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason
+items (*
+nitems (2.ClientGate.DrawResultItem"%
+A_Reward
+
+id (
+count ("@
+LimitPetReward
+rank (	 
+id (2.ClientGate.A_Reward";
+LimitPetRankItem
+rank (
+nick (	
+int ("×
+LimitPetInfoResponse(
+me (2.ClientGate.LimitPetRankItem+
+ranks (2.ClientGate.LimitPetRankItem
+	time_left (+
+rewards (2.ClientGate.LimitPetReward
+curr_monster (
+
+space_left ("2
+DrawIntLimitInfo
+
+id (
+
+limit_left ("O
+DrawIntShopResponse*
+lims (2.ClientGate.DrawIntLimitInfo
+ints ("
+DrawIntBuyRequest
+
+id ("r
+DrawIntBuyResponse
+
+id (&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason"
+DrawTenTenInfoResponse
+is_open (
+middle_prizes (
+high_prizes (
+middle_count (
+
+high_count ("(
+DrawTenTenPrizePush
+	the_prize (*N
+EnumMachineType
+
+enumNormal
+
+enumBetter
+enumBest
+	enumLimit*(
+EnumDrawType
+enumOne
+enumTen

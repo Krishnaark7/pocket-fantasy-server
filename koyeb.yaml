@@ -1,0 +1,19 @@
+name: pocket-fantasy-server
+services:
+  - name: pocket-fantasy-server
+    type: web
+    git:
+      repository: github.com/Krishnaark7/pocket-fantasy-server
+      branch: main
+    ports:
+      - port: 8088
+        path: /
+    routes:
+      - path: /
+        port: 8088
+    instance_type: nano
+    env:
+      - key: PORT
+        value: "8088"
+      - key: PYTHONUNBUFFERED
+        value: "1"

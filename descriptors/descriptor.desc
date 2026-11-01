@@ -1,0 +1,31 @@
+
+ google/protobuf/descriptor.protogoogle.protobuf"G
+FileDescriptorSet2
+file (2$.google.protobuf.FileDescriptorProto"Ë
+FileDescriptorProto
+name (	
+package (	
+
+dependency (	
+public_dependency
+ (
+weak_dependency (6
+message_type (2 .google.protobuf.DescriptorProto7
+	enum_type (2$.google.protobuf.EnumDescriptorProto8
+service (2'.google.protobuf.ServiceDescriptorProto8
+	extension (2%.google.protobuf.FieldDescriptorProto-
+options (2.google.protobuf.FileOptions9
+source_code_info	 (2.google.protobuf.SourceCodeInfo"ä
+DescriptorProto
+name (	4
+field (2%.google.protobuf.FieldDescriptorProto8
+	extension (2%.google.protobuf.FieldDescriptorProto5
+nested_type (2 .google.protobuf.DescriptorProto7
+	enum_type (2$.google.protobuf.EnumDescriptorProtoH
+extension_range (2/.google.protobuf.DescriptorProto.ExtensionRange9
+
+oneof_decl (2%.google.protobuf.OneofDescriptorProto0
+options (2.google.protobuf.MessageOptions,
+ExtensionRange
+start (
+end (

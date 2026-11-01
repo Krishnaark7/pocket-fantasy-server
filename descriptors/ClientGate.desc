@@ -1,0 +1,36 @@
+
+ClientGate.proto
+ClientGateCommon.protoMonster.protoClientGatePvP.protoClientGateBattleCommon.proto"{
+CreateRoleRequest&
+gender (2.ClientGate.EnumGender
+nick (	
+pet_id (
+avatar (
+pet_name (	"g
+CreateRoleResponse,
+result (2.ClientGate.CreateRoleResult#
+roles (2.ClientGate.RoleInfo"`
+Login2GameServerRequest
+uuid (	
+	reconnect (
+channel (	
+battle_type ("2
+
+LockReason
+reason (	
+left_seconds ("ê
+ResumeBattleInfo(
+type (2.ClientGate.EnumBattleType-
+battle_server (2.ClientGate.ServerInfo
+
+extra_info (	
+success ("—
+Login2GameServerResponse&
+result (2.ClientGate.EnumResult)
+info (2.ClientGate.PMUserBasicInfo)
+monsters (2.ClientGate.MonsterList
+tutorial (	(
+reason (2.ClientGate.FailedReason
+tutorial_drawcard (+
+lock_reason (2.ClientGate.LockReason3
+resume_battle (2.ClientGate.ResumeBattleInfo

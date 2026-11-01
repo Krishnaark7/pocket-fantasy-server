@@ -1,0 +1,60 @@
+
+
+Mail.protoMail"#
+MailItem
+
+id (
+num ("„
+Mail
+id (:0
+title (	
+content (
+nick (	
+item (2.Mail.MailItem
+ttl (:0
+	timestamp ("
+GetMailList
+uuid (	"/
+GetMailListResponse
+mail (2
+.Mail.Mail"*
+	CheckMail
+uuid (	
+mail_id ("K
+CheckMailResponse
+mail_id (%
+type (2.Mail.EnumCheckMailType"
+GetMailNumber
+uuid (	"'
+GetMailNumberResponse
+number ("
+	GetNotice
+uuid (	"#
+GetNoticeResponse
+notice (	"+
+ColorRGB	
+r (	
+g (	
+b ("5
+MarItem
+str (	
+color (2.Mail.ColorRGB".
+MarqueeContent
+items (2.Mail.MarItem"k
+Marquee
+content (	
+times (
+interval (
+level (
+type (2.Mail.MarqueeType""
+CheckAllMailRequest
+ids ("#
+CheckAllMailResponse
+ids (*@
+EnumCheckMailType
+enumCheckMailSuc
+enumCheckMailNone*V
+MarqueeType
+MarqueeTypeLABA
+MarqueeTypeSpecialPlayer
+MarqueeTypeOther

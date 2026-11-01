@@ -1,0 +1,361 @@
+
+ClientGateMonsterManage.proto
+ClientGateCommon.protoMonster.protoClientGateBackpack.proto"&
+MonsterBackpackRequest
+uuid (	"k
+MonsterBackpackResponse)
+monsters (2.ClientGate.MonsterList
+opened_count (
+team_id ("-
+MonsterBreakupRequest
+monster_uuid (	"‘
+MonsterBreakupResponse&
+result (2.ClientGate.EnumResult%
+montster (2.ClientGate.Monster(
+reason (2.ClientGate.FailedReason".
+MonsterTrainingRequest
+monster_uuid (	"’
+MonsterTrainingResponse&
+result (2.ClientGate.EnumResult%
+montster (2.ClientGate.Monster(
+reason (2.ClientGate.FailedReason"
+MonsterSingleRequest
+monster_uuid (	+
+type (2.ClientGate.EnumAttributeType2
+	cost_type (2.ClientGate.EnumConsumeCurrency"½
+MonsterSingleResponse&
+result (2.ClientGate.EnumResult+
+type (2.ClientGate.EnumAttributeType%
+montster (2.ClientGate.Monster(
+reason (2.ClientGate.FailedReason"+
+MonsterAddNewMonsterRequest
+uuid (	",
+MonsterAddNewMonsterResponse
+uuid (	"8
+ MonsterBaggageChangeOrderRequest
+monster_uuid (	"K
+!MonsterBaggageChangeOrderResponse&
+result (2.ClientGate.EnumResult"C
+MonsterIncreaseHPRequest
+monster_uuid (	
+	hp_offset ("C
+MonsterIncreaseHPResponse&
+result (2.ClientGate.EnumResult"C
+MonsterDecreaseHPRequest
+monster_uuid (	
+	hp_offset ("{
+MonsterDecreaseHPResponse&
+result (2.ClientGate.EnumResult%
+montster (2.ClientGate.Monster
+is_dead ("5
+MonsterPutIntoComputerRequest
+monster_uuid (	"H
+MonsterPutIntoComputerResponse&
+result (2.ClientGate.EnumResult"0
+MonsterPutIntoBagRequest
+monster_uuid (	"m
+MonsterPutIntoBagResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason"0
+MonsterToggleLockRequest
+monster_uuid (	"C
+MonsterToggleLockResponse&
+result (2.ClientGate.EnumResult"R
+MonsterFreeRequest
+monster_uuid (	&
+type (2.ClientGate.EnumFreeType"Ž
+MonsterFreeResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason
+mystery (
+monster_uuid (	"D
+MonsterEvoluteRequest
+monster_uuid (	
+target_pet_id ("‘
+MonsterEvoluteResponse&
+result (2.ClientGate.EnumResult%
+montster (2.ClientGate.Monster(
+reason (2.ClientGate.FailedReason"1
+MonsterIncreaseExpRequest
+monster_uuid (	"€
+MonsterIncreaseExpResponse&
+result (2.ClientGate.EnumResult
+is_level_up (%
+montster (2.ClientGate.Monster">
+MonsterChangeNickRequest
+monster_uuid (	
+nick (	"C
+MonsterChangeNickResponse&
+result (2.ClientGate.EnumResult"
+MonsterComputerRequest"D
+MonsterComputerResponse)
+monsters (2.ClientGate.MonsterList"g
+MonsterAddSkillRequest
+monster_uuid (	
+skill_id (
+old_skill_id (
+item_id ("A
+MonsterAddSkillResponse&
+result (2.ClientGate.EnumResult"C
+MonsterCancelSkillRequest
+monster_uuid (	
+skill_id (".
+MonsterCancelSkillResponse
+skill_id ("<
+MonsterOpenMonsterBagRequest
+seq (
+diamond ("q
+MonsterOpenMonsterBagResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason">
++MonsterGetAmazingExchangeMonsterListRequest
+quality ("§
+,MonsterGetAmazingExchangeMonsterListResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason%
+list (2.ClientGate.MonsterList".
+,MonsterAutoAmazingExchangeMonsterListRequest"¨
+-MonsterAutoAmazingExchangeMonsterListResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason%
+list (2.ClientGate.MonsterList"O
+MonsterAmazingExchangeRequest.
+	uuid_list (2.ClientGate.MonsterUuidList"n
+MonsterAmazingExchangeResponse&
+result (2.ClientGate.EnumResult$
+monster (2.ClientGate.Monster"9
+!MonsterGetItemsFromMonsterRequest
+monster_uuid (	"G
+"MonsterGetItemsFromMonsterResponse
+item_id (
+fruit_id ("P
+MonsterRecoverBagMonsterRequest-
+type (2.ClientGate.EnumConsumeCurrency"[
+ MonsterRecoverBagMonsterResponse&
+result (2.ClientGate.EnumResult
+diamond ("P
+MonsterRecoverAllMonsterRequest-
+type (2.ClientGate.EnumConsumeCurrency"i
+ MonsterRecoverAllMonsterResponse&
+result (2.ClientGate.EnumResult
+gold (
+diamond ("j
+MonsterDexResponse&
+result (2.ClientGate.EnumResult,
+dex_list (2.ClientGate.MonsterDexList"+
+MonsterResetRequest
+monster_uuid (	"‘
+MonsterResetResponse&
+result (2.ClientGate.EnumResult$
+monster (2.ClientGate.Monster+
+prop_detail (2.ClientGate.PropDetail"
+TrainningListRequest"K
+TrainningListResponse2
+train_cell_list (2.ClientGate.TrainCellList"#
+TrainningOpenRequest
+seq ("Ž
+TrainningOpenResponse&
+result (2.ClientGate.EnumResult#
+cell (2.ClientGate.TrainCell(
+reason (2.ClientGate.FailedReason"%
+TrainningUpdateRequest
+seq ("f
+TrainningUpdateResponse&
+result (2.ClientGate.EnumResult#
+cell (2.ClientGate.TrainCell";
+TrainningAddMonsterRequest
+seq (
+mon_uuid (	"j
+TrainningAddMonsterResponse&
+result (2.ClientGate.EnumResult#
+cell (2.ClientGate.TrainCell";
+TrainningDelMonsterRequest
+seq (
+mon_uuid (	"j
+TrainningDelMonsterResponse&
+result (2.ClientGate.EnumResult#
+cell (2.ClientGate.TrainCell"]
+TrainningUseItemRequest
+seq (
+mon_uuid (	
+item_id (
+
+item_count ("¢
+TrainningUseItemResponse&
+result (2.ClientGate.EnumResult#
+cell (2.ClientGate.TrainCell
+item_id ((
+reason (2.ClientGate.FailedReason"R
+SkillRecallRequest
+mon_uuid (	
+new_skill_id (
+old_skill_id ("=
+SkillRecallResponse&
+result (2.ClientGate.EnumResult"H
+MonsterRecoverTimeResponse
+num (
+time (
+num_max ("F
+MonsterDexMetResponse-
+petList (2.ClientGate.MonsterPetIdList"F
+MonsterDexHadResponse-
+petList (2.ClientGate.MonsterPetIdList"t
+TrainningUseBatchItemRequest
+seq (5
+	item_list (2".ClientGate.BatchTrainningItemList
+mon_uuid (	"§
+TrainningUseBatchItemResponse&
+result (2.ClientGate.EnumResult#
+cell (2.ClientGate.TrainCell(
+reason (2.ClientGate.FailedReason
+add_exp ("?
+MonsterToggleFruitRequest
+mon_uuid (	
+fruit_id ("D
+MonsterToggleFruitResponse&
+result (2.ClientGate.EnumResult"=
+MonsterToggleItemRequest
+mon_uuid (	
+item_id ("C
+MonsterToggleItemResponse&
+result (2.ClientGate.EnumResult")
+MonsterFullListRequest
+team_id ("È
+MonsterFullListResponse)
+monsters (2.ClientGate.MonsterList*
+team1 (2.ClientGate.MonsterUuidList*
+team2 (2.ClientGate.MonsterUuidList*
+team3 (2.ClientGate.MonsterUuidList"0
+MonsterCheckStateRequest
+monster_uuid (	"t
+MonsterCheckStateResponse
+is_has_lock (
+is_has_train (
+is_has_champion (
+is_has_king ("G
+BatchTrainningItemList-
+items (2.ClientGate.BatchTrainningItem"4
+BatchTrainningItem
+item_id (
+count ("<
+
+MonsterDex
+pet_id (
+is_met (
+is_had ("=
+MonsterDexList+
+monster_dex (2.ClientGate.MonsterDex"I
+SingleValueTimeResponse
+num (
+time (
+bought_time ("
+MonsterGetNoLimitListRequest"F
+MonsterGetNoLimitListResponse%
+list (2.ClientGate.MonsterList")
+MonsterDexAddMetRequest
+pet_id ("
+MonsterDexAddMetResponse")
+MonsterDexAddHadRequest
+pet_id ("
+MonsterDexAddHadResponse"Š
+MonsterIncreaseElementRequest
+monster_uuid (	1
+element_type (2.ClientGate.EnumElementType
+skill_id (
+offset ("H
+MonsterIncreaseElementResponse&
+result (2.ClientGate.EnumResult"
+BuySingleTimesRequest"@
+BuySingleTimesResponse&
+result (2.ClientGate.EnumResult"\
+MonsterUpdateCharStoneRequest
+chara_id ()
+
+item_count (2.ClientGate.ItemCount"¨
+MonsterUpdateCharStoneResponse
+
+is_success (
+exp (
+is_critical (&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason"H
+"MonsterChangeCharactoristicRequest
+mon_uuid (	
+chara_id ("_
+#MonsterChangeCharactoristicResponse&
+result (2.ClientGate.EnumResult
+chara_id ("2
+MonsterCharactoristicUIRequest
+chara_id (".
+MonsterCharactoristicUIResponse
+exp ("*
+MonsterUseFruitRequest
+mon_uuid (	"A
+MonsterUseFruitResponse&
+result (2.ClientGate.EnumResult"E
+!MonsterInitMonsterWithNameRequest
+pet_id (
+pet_name (	"w
+"MonsterInitMonsterWithNameResponse&
+result (2.ClientGate.EnumResult)
+monsters (2.ClientGate.MonsterList"
+MonsterAbleToFreeListRequest"P
+MonsterAbleToFreeListResponse/
+monsters (2.ClientGate.MonsterSimpleList""
+ MonsterComputerSimpleListRequest"T
+!MonsterComputerSimpleListResponse/
+monsters (2.ClientGate.MonsterSimpleList"B
+MonsterUpdateNoticeRequest$
+monster (2.ClientGate.Monster"
+MonsterUpdateNoticeResponse" 
+MonsterComputerIconListRequest"M
+MonsterComputerIconListResponse*
+icons (2.ClientGate.MonsterIconList"#
+!IsMonsterRecoverAllMonsterRequest"L
+"IsMonsterRecoverAllMonsterResponse&
+result (2.ClientGate.EnumResult"&
+MonsterInfoRequest
+mon_uuid (	";
+MonsterInfoResponse$
+monster (2.ClientGate.Monster"(
+MonsterDefaultListRequest
+seq ("K
+MonsterDefaultListResponse-
+monster_list (2.ClientGate.MonsterList"^
+MonsterChangeDefaultListRequest
+seq (.
+	uuid_list (2.ClientGate.MonsterUuidList"t
+ MonsterChangeDefaultListResponse&
+result (2.ClientGate.EnumResult(
+reason (2.ClientGate.FailedReason"3
+$MonsterGetDefaultMonstersListRequest
+seq ("V
+%MonsterGetDefaultMonstersListResponse-
+monster_list (2.ClientGate.MonsterList"?
+0MonsterGetComputerMonstersListWithoutTeamRequest
+seq ("b
+1MonsterGetComputerMonstersListWithoutTeamResponse-
+monster_list (2.ClientGate.MonsterList"G
+&MonsterChangeCurrentDefaultListRequest
+seq (
+is_check ("h
+'MonsterChangeCurrentDefaultListResponse&
+result (2.ClientGate.EnumResult
+monster_count ("M
+$MonsterUseChangeCharactorItemRequest
+monster_uuid (	
+item_id ("f
+%MonsterUseChangeCharactorItemResponse&
+result (2.ClientGate.EnumResult
+new_character ("D
+MonsterUseEffortItemRequest
+monster_uuid (	
+item_id ("F
+MonsterUseEffortItemResponse&
+result (2.ClientGate.EnumResult*?
+EnumElementType
+EnumElementTypeHP 
+EnumElementTypePP*=
+EnumFreeType
+enumFreeTypeNoraml 
+enumFreeTypeDream

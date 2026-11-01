@@ -1,0 +1,62 @@
+
+ClientGateLeague.proto
+ClientGateMonster.proto"l
+LeagueSettingResponse
+score (
+	rest_time (
+rank (
+rest_num (
+	max_times ("­
+LeagueEnemyItem
+enemy_id (
+
+enemy_rank (
+
+enemy_name (	
+enemy_level ()
+monster_list (2.ClientGate.Monster
+uuid (	
+
+trainer_id ("A
+LeagueEnemyResponse*
+items (2.ClientGate.LeagueEnemyItem"¢
+LeagueBattleRecord
+enemy_id (
+
+enemy_name (	
+enemy_level (
+win_or_lose (
+rank_change (
+battle_time (
+
+trainer_id ("M
+LeagueBattleRecordResponse/
+records (2.ClientGate.LeagueBattleRecord"o
+LeagueBattleRank
+enemy_id (
+
+enemy_name (	
+enemy_level (
+rank (
+
+trainer_id ("I
+LeagueBattleRankResponse-
+records (2.ClientGate.LeagueBattleRank")
+LeagueDefenceFormat
+
+monster_id (	"-
+LeagueDefenceFormatSave
+
+monster_id (	"K
+LeagueBuyTimesResponse
+times (
+diamond (
+	max_times ("&
+LeagueCancelCDResult
+result ("C
+LeagueQueryResponse
+top (
+current (
+reward (	"
+LeagueStatus
+status (

@@ -26,6 +26,7 @@ import json
 import os
 import sys
 import time
+import threading
 
 class NullWriter:
     def write(self, s): pass
@@ -57,6 +58,8 @@ elif '--port' in sys.argv:
     if idx + 1 < len(sys.argv) and sys.argv[idx + 1].isdigit():
         PORT = int(sys.argv[idx + 1])
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -643,6 +646,67 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
         path = parsed.path
         qs = parse_qs(parsed.query)
 
+        # Original APK Java Updater version check
+        if '/kdyg_en' in path or 'version.json' in path:
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "channel": "le8",
+                "version": "1.3.0",
+                "build": "16238",
+                "resource": "2",
+                "status": 0
+            }).encode('utf-8'))
+            return
+
+        # Original APK Native C++ API check
+        if 'api.php' in path:
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            resp = {
+                "status": 1,
+                "msg": "success",
+                "data": {
+                    "version": "1.3.0",
+                    "servers": [
+                        {
+                            "id": 1,
+                            "name": "Server 1: Kanto Global",
+                            "ip": "10.76.68.252",
+                            "port": 9911,
+                            "status": 1,
+                            "is_new": 1
+                        }
+                    ]
+                }
+            }
+            self.wfile.write(json.dumps(resp).encode('utf-8'))
+            return
+
+        # Original APK Notice Webview
+        if 'n.html' in path:
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.end_headers()
+            html = """<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Notice</title></head>
+<body style="background:#16162a;color:#eee;font-family:sans-serif;padding:16px;">
+    <h2 style="color:#4ecca3;margin-top:0;">Pocket Fantasy Authentic Online</h2>
+    <p>Welcome Trainer! The authentic server is running 24/7 online.</p>
+    <div style="background:#22223b;border-radius:8px;padding:12px;margin-top:10px;">
+        <p><b>Server 1:</b> Kanto Global (<span style="color:#00ff88;">ONLINE</span>)</p>
+        <p><b>Events:</b> Master League Tournament, Double EXP Week, Safari Hunt</p>
+    </div>
+</body>
+</html>"""
+            self.wfile.write(html.encode('utf-8'))
+            return
+
         # Health & Server Status
         if path in ['/', '/api/status']:
             sconn = get_server_db()
@@ -1143,6 +1207,10 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         body = self._read_body()
+
+        # Original APK API POST requests (appversion, pay, receive)
+        if 'api.php' in path:
+            return self._send_json(200, { 'status': 1, 'msg': 'success' })
 
         # Account Registration
         if path == '/api/auth/register':
@@ -2406,6 +2474,30 @@ if __name__ == '__main__':
     print(f' Local Address:  http://localhost:{PORT}')
     print(f' Emulator Host:  http://10.0.2.2:{PORT}')
     print('=============================================================================')
+
+    # Start Authentic Protobuf TCP Gateway on Port 9911
+    try:
+        from gateway import run_tcp_gateway_server
+        gw_ip = os.environ.get('GATEWAY_IP', '0.0.0.0')
+        t_gw = threading.Thread(target=run_tcp_gateway_server, kwargs={'host': '0.0.0.0', 'port': 9911, 'server_ip': gw_ip}, daemon=True)
+        t_gw.start()
+        with open(os.path.join(BASE_DIR, 'server_startup.log'), 'a') as f:
+            f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] TCP Gateway thread started on port 9911\n")
+    except Exception as e:
+        with open(os.path.join(BASE_DIR, 'server_startup.log'), 'a') as f:
+            f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] TCP Gateway error: {e}\n")
+
+    # Start Auxiliary HTTP listeners for native APK (ports 80, 888, 8082)
+    for sec_port in [80, 888, 8082]:
+        try:
+            sec_server = ThreadedHTTPServer(('0.0.0.0', sec_port), GameServerHandler)
+            threading.Thread(target=sec_server.serve_forever, daemon=True).start()
+            with open(os.path.join(BASE_DIR, 'server_startup.log'), 'a') as f:
+                f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Auxiliary HTTP active on port {sec_port}\n")
+        except Exception as e:
+            with open(os.path.join(BASE_DIR, 'server_startup.log'), 'a') as f:
+                f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Auxiliary port {sec_port} skipped: {e}\n")
+
     server = ThreadedHTTPServer(('0.0.0.0', PORT), GameServerHandler)
     try:
         server.serve_forever()

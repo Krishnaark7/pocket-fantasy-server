@@ -1,0 +1,112 @@
+
+ClientGateBattleCommon.proto
+ClientGateCommon.protoMonster.protoClientGateBoss.proto">
+MonsterAddExp
+monster_uuid (	
+monster_add_exp ("š
+BattleResultRequest
+user_id (	
+win ((
+type (2.ClientGate.EnumBattleType
+cur_hp (
+max_hp (
+status (
+enemy_id (	
+
+dead_count ((
+monster	 (2.ClientGate.MonsterList+
+mon_exps
+ (2.ClientGate.MonsterAddExp
+boss_damage (
+chapter (
+tollgate (
+round (
+npc (&
+	enemy_pet (2.ClientGate.Monster
+
+pet_escape ("¹
+BattleResultResponse(
+type (2.ClientGate.EnumBattleType
+user_id (	
+is_win (
+money (
+exp (
+new_lv (
+
+new_lv_max (
+score (
+star	 ('
+items
+ (2.ClientGate.GridItemInfo
+pet_id (
+pet_lv (
+rank ((
+monster (2.ClientGate.MonsterList
+boss_damage (
+cd_time (
+	boss_time (
+award (0
+	boss_rank (2.ClientGate.WorldBossRankInfo"P
+BattleEscapeRequest
+user_id (	(
+type (2.ClientGate.EnumBattleType"-
+BattlePlayerOfflineRequest
+user_id (	",
+BattlePlayerOnlineRequest
+user_id (	".
+BattlePlayerIsOnLineRequest
+user_id (	"A
+BattlePlayerIsOnLineResponse
+user_id (	
+isOnline ("]
+BattleEvent
+Zhu ((
+Wei (2.ClientGate.BattleEventType
+Bin (
+
+Bu ("<
+BattleEventSeries'
+events (2.ClientGate.BattleEvent"¥
+UpdateMonsterRequest
+sid ()
+monsters (2.ClientGate.MonsterList(
+type (2.ClientGate.EnumBattleType+
+mon_exps (2.ClientGate.MonsterAddExp"&
+UpdateMonsterReponse
+result (" 
+CatchMonsterRequest
+user_id (	(
+type (2.ClientGate.EnumBattleType
+cur_hp (
+max_hp (
+status (
+pet_id (
+pet_lv ("œ
+CatchMonsterResponse(
+type (2.ClientGate.EnumBattleType&
+result (2.ClientGate.EnumResult
+uuid (	$
+monster (2.ClientGate.Monster";
+GetChapterBoxRequest
+
+chapter_id (
+box_seq ("?
+GetChapterBoxResponse&
+result (2.ClientGate.EnumResult"f
+BattleStateBuff
+
+Id (
+remain (
+round (
+skillIdx (
+functor_states ("~
+BattleStateSkill
+
+Id (
+m_pp (
+m_pwr (
+
+m_priority (
+m_st (
+m_harm (
+m_ppMax (

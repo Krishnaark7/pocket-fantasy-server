@@ -1,2 +1,2 @@
 # Pocket Fantasy Dedicated Server
-# 100% pure Python standard library (http.server, sqlite3, json, hashlib)
+protobuf>=4.21.0

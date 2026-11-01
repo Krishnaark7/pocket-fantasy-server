@@ -1,0 +1,55 @@
+
+ClientGateAuction.proto
+ClientGateCommon.proto"¢
+AuctionItem
+	curr_item ('
+type (2.ClientGate.AuctionStatus
+
+id (
+
+start_time (
+
+item_count (
+bid_type (
+	start_bid ("½
+AuctionDetail
+
+curr_round (
+	cost_type (
+curr_bid (
+curr_winner (	
+my_bid (
+has_bid (
+	time_left	 (
+round_time_left
+ (
+	server_id ("•
+AuctionFlushDataResponse&
+result (2.ClientGate.EnumResult&
+items (2.ClientGate.AuctionItem)
+detail (2.ClientGate.AuctionDetail" 
+AuctionBidRequest
+num ("<
+AuctionBidResponse&
+result (2.ClientGate.EnumResult"–
+AuctionBidResult
+item_id (&
+result (2.ClientGate.EnumResult
+winner (	
+	is_winner (
+	cost_type (
+my_payments ("
+WorldAuctionFlushDataRequest"š
+WorldAuctionFlushDataResponse&
+result (2.ClientGate.EnumResult&
+items (2.ClientGate.AuctionItem)
+detail (2.ClientGate.AuctionDetail"
+WorldAuctionLeave"%
+WorldAuctionBidRequest
+num ("A
+WorldAuctionBidResponse&
+result (2.ClientGate.EnumResult*<
+AuctionStatus
+WaitingStart
+Running
+Finished
