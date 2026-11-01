@@ -11,6 +11,9 @@ services:
     routes:
       - path: /
         port: 8088
+    regions:
+      - sin
+      - fra
     instance_type: nano
     env:
       - key: PORT
