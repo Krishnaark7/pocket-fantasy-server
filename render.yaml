@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: pocket-fantasy-server
+    name: mythical-elves-online
     runtime: docker
     plan: free
     region: singapore
