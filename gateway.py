@@ -162,7 +162,9 @@ def get_or_create_character(account):
     conn.close()
     return char, party_ids
 
-def handle_client_connection(sock, addr, server_ip="10.76.68.252"):
+def handle_client_connection(sock, addr, server_ip=None):
+    if not server_ip or server_ip == "0.0.0.0":
+        server_ip = os.environ.get("GATEWAY_IP", "bore.pub")
     log(f"New client connection from {addr}")
     current_account = None
     try:
@@ -243,7 +245,9 @@ def handle_client_connection(sock, addr, server_ip="10.76.68.252"):
         sock.close()
         log(f"Client {addr} disconnected cleanly.")
 
-def run_tcp_gateway_server(host='0.0.0.0', port=9911, server_ip="10.76.68.252"):
+def run_tcp_gateway_server(host='0.0.0.0', port=9911, server_ip=None):
+    if not server_ip or server_ip == "0.0.0.0":
+        server_ip = os.environ.get("GATEWAY_IP", "bore.pub")
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

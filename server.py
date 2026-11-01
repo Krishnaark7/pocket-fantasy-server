@@ -2544,7 +2544,7 @@ if __name__ == '__main__':
     # Start Authentic Protobuf TCP Gateway on Port 9911
     try:
         from gateway import run_tcp_gateway_server
-        gw_ip = os.environ.get('GATEWAY_IP', '0.0.0.0')
+        gw_ip = os.environ.get('GATEWAY_IP', 'bore.pub')
         t_gw = threading.Thread(target=run_tcp_gateway_server, kwargs={'host': '0.0.0.0', 'port': 9911, 'server_ip': gw_ip}, daemon=True)
         t_gw.start()
         with open(os.path.join(BASE_DIR, 'server_startup.log'), 'a') as f:
