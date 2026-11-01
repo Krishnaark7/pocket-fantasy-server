@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mythical Elves - GM Control Panel</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f101c; color: #e1e4ea; padding: 16px; }
+        .container { max-width: 600px; margin: 0 auto; background: #18192c; border: 1px solid #2d2f4a; border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid #2d2f4a; padding-bottom: 15px; }
+        .header h1 { font-size: 24px; color: #4ecca3; margin-bottom: 6px; }
+        .header p { font-size: 13px; color: #8e95aa; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #a5b0c7; margin-bottom: 6px; }
+        input, select, textarea { width: 100%; padding: 10px 12px; background: #23253e; border: 1px solid #36395e; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: #4ecca3; }
+        .row { display: flex; gap: 12px; }
+        .row > div { flex: 1; }
+        .btn { width: 100%; padding: 12px; background: #4ecca3; color: #0f101c; font-size: 15px; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn:hover { background: #45b792; }
+        .alert { display: none; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; text-align: center; }
+        .alert-success { background: rgba(78, 204, 163, 0.2); border: 1px solid #4ecca3; color: #4ecca3; }
+        .alert-error { background: rgba(235, 87, 87, 0.2); border: 1px solid #eb5757; color: #eb5757; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #2d2f4a; color: #a5b0c7; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👑 Mythical Elves GM Tool</h1>
+            <p>24/7 Dedicated Server Admin & Reward Delivery</p>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <form id="gmForm">
+            <div class="form-group">
+                <label for="target">Target Player (Username or Player ID):</label>
+                <input type="text" id="target" placeholder="e.g. Rk or G040002051 or 'all' for everyone" required>
+                <div class="badge">Type 'all' to grant to EVERY registered player</div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="diamonds">💎 Diamonds:</label>
+                    <input type="number" id="diamonds" value="50000" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="gold">🪙 Gold Coins:</label>
+                    <input type="number" id="gold" value="1000000" min="0">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="pet">🐾 Pokémon Gift:</label>
+                    <select id="pet">
+                        <option value="0">-- None --</option>
+                        <option value="150" selected>#150 Mewtwo</option>
+                        <option value="10150">#10150 Mewtwo (Shiny)</option>
+                        <option value="20150">#20150 Mega Mewtwo X</option>
+                        <option value="30150">#30150 Mega Mewtwo Y</option>
+                        <option value="5150">#5150 Dark Mewtwo</option>
+                        <option value="6">#006 Charizard</option>
+                        <option value="384">#384 Rayquaza</option>
+                        <option value="493">#493 Arceus</option>
+                        <option value="25">#025 Pikachu</option>
+                        <option value="249">#249 Lugia</option>
+                        <option value="382">#382 Kyogre</option>
+                        <option value="383">#383 Groudon</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pet_level">Pet Level:</label>
+                    <input type="number" id="pet_level" value="100" min="1" max="100">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="title">Mail Title:</label>
+                <input type="text" id="title" value="Special Game Master Gift">
+            </div>
+
+            <div class="form-group">
+                <label for="content">Mail Message:</label>
+                <textarea id="content" rows="2">Here is a special reward from Game Master Krishna. Enjoy your adventure!</textarea>
+            </div>
+
+            <button type="submit" class="btn">🚀 Deliver Reward to Player Mailbox</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('gmForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const alertBox = document.getElementById('alertBox');
+            btn.disabled = true;
+            btn.innerText = "Delivering...";
+            alertBox.style.display = 'none';
+
+            const payload = {
+                target: document.getElementById('target').value.trim(),
+                diamonds: parseInt(document.getElementById('diamonds').value) || 0,
+                gold: parseInt(document.getElementById('gold').value) || 0,
+                pet_id: parseInt(document.getElementById('pet').value) || 0,
+                pet_name: document.getElementById('pet').options[document.getElementById('pet').selectedIndex].text.replace(/#[0-9]+\s*/, ''),
+                pet_level: parseInt(document.getElementById('pet_level').value) || 100,
+                title: document.getElementById('title').value.trim(),
+                content: document.getElementById('content').value.trim()
+            };
+
+            try {
+                const res = await fetch('/api/gm/send_gift', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alertBox.className = 'alert alert-success';
+                    alertBox.innerText = '✅ ' + (data.message || 'Reward successfully delivered to mailbox!');
+                } else {
+                    alertBox.className = 'alert alert-error';
+                    alertBox.innerText = '❌ Error: ' + (data.error || 'Failed to send');
+                }
+            } catch(err) {
+                alertBox.className = 'alert alert-error';
+                alertBox.innerText = '❌ Network error: ' + err.message;
+            } finally {
+                alertBox.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = "🚀 Deliver Reward to Player Mailbox";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY data/ ./data/
 COPY descriptors/ ./descriptors/
 COPY gateway.py ./
+COPY gm.html ./
 COPY server.py ./
 
 # Expose HTTP port (10000 / 8088) and Protobuf Gateway port (9911)

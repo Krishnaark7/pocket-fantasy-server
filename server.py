@@ -707,6 +707,17 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(html.encode('utf-8'))
             return
 
+        if path == '/gm' or path == '/admin':
+            gm_path = os.path.join(BASE_DIR, 'gm.html')
+            if os.path.exists(gm_path):
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                with open(gm_path, 'rb') as f:
+                    self.wfile.write(f.read())
+                return
+
         if path == '/api/mail/list':
             username = qs.get('username', [None])[0]
             if not username:
