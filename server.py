@@ -675,9 +675,9 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
                     "servers": [
                         {
                             "id": 1,
-                            "name": "Server 1: Kanto Global",
-                            "ip": "10.76.68.252",
-                            "port": 9911,
+                            "name": "Server 1: Mythical Elves Global",
+                            "ip": "mythical-elves-online.onrender.com",
+                            "port": 10000,
                             "status": 1,
                             "is_new": 1
                         }
@@ -696,16 +696,25 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
 <html>
 <head><meta charset="utf-8"><title>Notice</title></head>
 <body style="background:#16162a;color:#eee;font-family:sans-serif;padding:16px;">
-    <h2 style="color:#4ecca3;margin-top:0;">Pocket Fantasy Authentic Online</h2>
-    <p>Welcome Trainer! The authentic server is running 24/7 online.</p>
+    <h2 style="color:#4ecca3;margin-top:0;">Mythical Elves Authentic Online</h2>
+    <p>Welcome Trainer! The dedicated server is running 24/7 online.</p>
     <div style="background:#22223b;border-radius:8px;padding:12px;margin-top:10px;">
-        <p><b>Server 1:</b> Kanto Global (<span style="color:#00ff88;">ONLINE</span>)</p>
+        <p><b>Server 1:</b> Mythical Elves Global (<span style="color:#00ff88;">ONLINE</span>)</p>
         <p><b>Events:</b> Master League Tournament, Double EXP Week, Safari Hunt</p>
     </div>
 </body>
 </html>"""
             self.wfile.write(html.encode('utf-8'))
             return
+
+        if path == '/api/mail/list':
+            username = qs.get('username', [None])[0]
+            if not username:
+                return self._send_json(400, {'success': False, 'error': 'Missing username'})
+            sconn = get_server_db()
+            mails = [dict(r) for r in sconn.execute("SELECT * FROM player_mails WHERE username = ? ORDER BY mail_id DESC", (username,)).fetchall()]
+            sconn.close()
+            return self._send_json(200, {'success': True, 'mails': mails})
 
         # Health & Server Status
         if path in ['/', '/api/status']:
@@ -2461,6 +2470,52 @@ class GameServerHandler(http.server.BaseHTTPRequestHandler):
                 'message': f"League phase successfully set to: {sched['phase']}",
                 'schedule': sched
             })
+
+        if path == '/api/mail/claim':
+            username = body.get('username')
+            mail_id = body.get('mail_id')
+            if not username or not mail_id:
+                return self._send_json(400, {'success': False, 'error': 'Missing username or mail_id'})
+            sconn = get_server_db()
+            mail = sconn.execute("SELECT * FROM player_mails WHERE mail_id = ? AND username = ? AND claimed = 0", (mail_id, username)).fetchone()
+            if not mail:
+                sconn.close()
+                return self._send_json(404, {'success': False, 'error': 'Mail not found or already claimed'})
+            
+            sconn.execute("UPDATE characters SET gold = gold + ?, diamonds = diamonds + ? WHERE username = ?", (mail['gold'], mail['diamonds'], username))
+            if mail['pet_id'] > 0:
+                sconn.execute("""INSERT INTO team_pets (username, server_id, slot, pet_id, name, level, exp, cur_hp, max_hp, atk, def, spatk, spdef, speed, star, breakthrough_stage, iv_hp, iv_atk, iv_def, iv_spatk, iv_spdef, iv_speed)
+                                 VALUES (?, 1, 3, ?, ?, ?, 99999, 999, 999, 500, 350, 650, 350, 480, 5, 13, 31, 31, 31, 31, 31, 31)""",
+                              (username, mail['pet_id'], mail['pet_name'] or 'Mewtwo', mail['pet_level']))
+            sconn.execute("UPDATE player_mails SET claimed = 1 WHERE mail_id = ?", (mail_id,))
+            sconn.commit()
+            sconn.close()
+            return self._send_json(200, {'success': True, 'message': 'Rewards claimed successfully!'})
+
+        if path == '/api/gm/send_gift':
+            target = body.get('target', 'all')
+            title = body.get('title', 'Game Master Gift')
+            content = body.get('content', 'Here is a special reward from the Game Master!')
+            gold = int(body.get('gold', 0))
+            diamonds = int(body.get('diamonds', 0))
+            pet_id = int(body.get('pet_id', 0))
+            pet_name = body.get('pet_name', '')
+            pet_level = int(body.get('pet_level', 100))
+            now_ts = int(time.time())
+
+            sconn = get_server_db()
+            if target == 'all':
+                users = [r['username'] for r in sconn.execute("SELECT username FROM characters").fetchall()]
+            else:
+                users = [target]
+
+            for u in users:
+                sconn.execute("""INSERT INTO player_mails (username, title, content, sender, gold, diamonds, pet_id, pet_name, pet_level, created_at)
+                                 VALUES (?, ?, ?, 'Game Master Krishna', ?, ?, ?, ?, ?, ?)""",
+                              (u, title, content, gold, diamonds, pet_id, pet_name, pet_level, now_ts))
+            sconn.commit()
+            sconn.close()
+            return self._send_json(200, {'success': True, 'message': f'Gift successfully sent to {len(users)} player(s)!'})
 
         self._send_json(404, { 'success': False, 'error': 'Endpoint not found' })
 
