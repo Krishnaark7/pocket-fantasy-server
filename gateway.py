@@ -181,14 +181,14 @@ def build_monster_list_bytes(pets):
         ml += encode_field(1, 2, m_bytes)
     return bytes(ml)
 
-def build_role_info(uuid, nick, level=100, exp=1000, head_id=150, party_ids=[150, 10150]):
+def build_role_info(uuid, nick, level=100, exp=1000, head_id=1, party_ids=[150, 10150]):
     data = bytearray()
     data += encode_field(1, 2, uuid)
     data += encode_field(2, 2, nick)
     data += encode_field(3, 0, 1)   # gender = male
     data += encode_field(4, 0, level)
     data += encode_field(5, 0, exp)
-    data += encode_field(6, 0, head_id)
+    data += encode_field(6, 0, head_id) # 1 = player01 Ash/Red avatar
     data += encode_field(7, 0, 1)   # trainer_id
     data += encode_field(8, 0, int(time.time()))
     data += encode_field(11, 0, 15) # VIP level 15
@@ -207,7 +207,9 @@ def build_pm_user_basic_info(uuid, nick, stamina=120, money=10000000, diamond=10
     role_bytes = build_role_info(uuid, nick, level=level, party_ids=party_ids)
     data += encode_field(5, 2, role_bytes)
     data += encode_field(6, 2, "Server 1: Kanto Global")
-    data += encode_field(18, 0, 15) # vip_lev
+    data += encode_field(16, 2, "guide_complete") # guide = "guide_complete"
+    data += encode_field(17, 0, 4)                # first_select_pet = 4 (Charmander chosen)
+    data += encode_field(18, 0, 15)               # vip_lev
     return bytes(data)
 
 def build_login2gameserver_response(uuid, nick, stamina=120, money=10000000, diamond=100000, level=100, pets=[], party_ids=[150, 10150]):
@@ -218,8 +220,7 @@ def build_login2gameserver_response(uuid, nick, stamina=120, money=10000000, dia
     if pets:
         monsters_bytes = build_monster_list_bytes(pets)
         data += encode_field(3, 2, monsters_bytes)
-    data += encode_field(4, 2, "") # tutorial
-    data += encode_field(6, 0, 1)  # tutorial_drawcard = true
+    # Note: tutorial (tag 4) and tutorial_drawcard (tag 6) are omitted completely to prevent engine null pointer crash
     return bytes(data)
 
 def send_tcp_packet(sock, cmd, serialized=b''):
@@ -370,20 +371,30 @@ def handle_client_connection(sock, addr, server_ip=None):
             # Opcode 430700: ACTIVITY_OPEN_STATUS_REQUEST
             elif cmd == 430700:
                 log(f"Opcode 430700 (ACTIVITY_OPEN_STATUS_REQUEST)")
-                act_data = bytearray()
-                for tag in range(1, 10):
-                    act_data += encode_field(tag, 0, 1)
-                send_tcp_packet(sock, 430701, bytes(act_data))
-                log(f"Sent Opcode 430701 (ACTIVITY_OPEN_STATUS_RESPONSE)")
+                send_tcp_packet(sock, 430701, b'')
+                log(f"Sent Opcode 430701 (ACTIVITY_OPEN_STATUS_RESPONSE) -> safe empty")
 
             # Opcode 430100: RED_POINTS_STATUES_REQUEST
             elif cmd == 430100:
                 log(f"Opcode 430100 (RED_POINTS_STATUES_REQUEST)")
-                rp_data = bytearray()
-                for tag in range(1, 15):
-                    rp_data += encode_field(tag, 0, 0)
-                send_tcp_packet(sock, 430101, bytes(rp_data))
-                log(f"Sent Opcode 430101 (RED_POINTS_STATUES_RESPONSE)")
+                send_tcp_packet(sock, 430101, b'')
+                log(f"Sent Opcode 430101 (RED_POINTS_STATUES_RESPONSE) -> safe empty")
+
+            # Opcode 310001: OPERA_DATA_REQUEST (Stage / chapter progress)
+            elif cmd == 310001:
+                log(f"Opcode 310001 (OPERA_DATA_REQUEST)")
+                rec_bytes = bytearray()
+                for stage_idx in range(1, 10):
+                    rec = encode_field(1, 0, 1) + encode_field(2, 0, stage_idx) + encode_field(3, 0, 3)
+                    rec_bytes += encode_field(1, 2, rec)
+                send_tcp_packet(sock, 310002, bytes(rec_bytes))
+                log(f"Sent Opcode 310002 (OPERA_DATA_RESPONSE)")
+
+            # Opcode 420001: DRAW_INFO_REQUEST (Gacha info)
+            elif cmd == 420001:
+                log(f"Opcode 420001 (DRAW_INFO_REQUEST)")
+                send_tcp_packet(sock, 420002, b'')
+                log(f"Sent Opcode 420002 (DRAW_INFO_RESPONSE)")
 
             # Opcode 300001: MONSTER_BACKPACK_REQUEST
             elif cmd == 300001:
