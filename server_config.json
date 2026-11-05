@@ -1,5 +1,7 @@
 {
-  "server_url": "https://mythical-elves-online.onrender.com",
-  "name": "Mythical Elves Global Cloud Server",
-  "version": "1.0.1"
+  "server_url": "https://were-metres-begin-function.trycloudflare.com",
+  "name": "Pocket Fantasy Official Global Server",
+  "version": "1.0.1",
+  "status": "online",
+  "updated_at": 1793900128
 }
