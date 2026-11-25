@@ -1,7 +1,7 @@
 {
-  "server_url": "https://spots-queue-cruz-deborah.trycloudflare.com",
+  "server_url": "https://api.trycloudflare.com",
   "name": "Pocket Fantasy Official Global Server",
   "version": "1.0.1",
   "status": "online",
-  "updated_at": 1795509488
+  "updated_at": 1795573712
 }
